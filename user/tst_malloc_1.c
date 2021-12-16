@@ -18,6 +18,7 @@ void _main(void)
 			}
 		}
 		if (fullWS) panic("Please increase the WS size");
+		//else cprintf("tamm");
 	}
 
 
@@ -29,6 +30,7 @@ void _main(void)
 		int freeFrames = sys_calculate_free_frames() ;
 		int usedDiskPages = sys_pf_calculate_allocated_pages() ;
 		ptr_allocations[0] = malloc(2*Mega-kilo);
+	//	cprintf("tamm");
 		if ((uint32) ptr_allocations[0] <  (USER_HEAP_START) || (uint32) ptr_allocations[0] > (USER_HEAP_START + PAGE_SIZE)) panic("Wrong start address for the allocated space... ");
 		//		if ((freeFrames - sys_calculate_free_frames()) != 512+1 ) panic("Wrong allocation: ");
 		if ((freeFrames - sys_calculate_free_frames()) != 1 ) panic("Wrong allocation: either extra pages are allocated in memory or pages not allocated correctly on PageFile");

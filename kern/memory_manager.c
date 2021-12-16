@@ -809,6 +809,35 @@ void freeMem(struct Env* e, uint32 virtual_address, uint32 size)
 				{
 					if(i == env_page_ws_get_virtual_address(e, j))
 					{
+						struct WorkingSetElement * it = NULL;
+						LIST_FOREACH(it,&(curenv->ActiveList))
+		                {
+							if(it->virtual_address == i)
+							{
+								if(LIST_SIZE(&curenv->SecondList) > 0)
+								{
+							struct WorkingSetElement* tail = LIST_FIRST(&curenv->SecondList);
+							 LIST_REMOVE(&curenv->ActiveList,it);
+							LIST_INSERT_TAIL(&curenv->ActiveList,tail);
+							LIST_REMOVE(&curenv->SecondList , tail );
+							//cprintf("list size: %d ", LIST_SIZE(&curenv->ActiveList) );
+							pt_set_page_permissions(curenv,tail->virtual_address,PERM_WRITEABLE|PERM_USER|PERM_PRESENT,0);
+							pt_set_page_permissions(curenv,it->virtual_address,0,PERM_PRESENT|PERM_WRITEABLE);
+							}
+							else
+							{
+								 LIST_REMOVE(&curenv->ActiveList,it);
+								 pt_set_page_permissions(curenv,it->virtual_address,0,PERM_PRESENT|PERM_WRITEABLE);
+
+
+							}
+								 break;
+
+
+							}
+
+		                }
+
 						unmap_frame(e->env_page_directory, (void*)i); //Remove from RAM
 						env_page_ws_clear_entry(e, j); //Remove Entry From WS
 						break;
@@ -1413,3 +1442,6 @@ uint32 isKHeapPlacementStrategyFIRSTFIT(){if(_KHeapPlacementStrategy == KHP_PLAC
 uint32 isKHeapPlacementStrategyBESTFIT(){if(_KHeapPlacementStrategy == KHP_PLACE_BESTFIT) return 1; return 0;}
 uint32 isKHeapPlacementStrategyNEXTFIT(){if(_KHeapPlacementStrategy == KHP_PLACE_NEXTFIT) return 1; return 0;}
 uint32 isKHeapPlacementStrategyWORSTFIT(){if(_KHeapPlacementStrategy == KHP_PLACE_WORSTFIT) return 1; return 0;}
+
+
+

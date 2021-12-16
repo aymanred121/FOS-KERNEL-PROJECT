@@ -835,8 +835,11 @@ void env_free(struct Env *e)
 	panic("env_free() is not implemented yet...!!");
 
 	// [1] Free the pages in the PAGE working set from the main memory
+
 	// [2] Free LRU lists
+
 	// [3] Free all TABLES from the main memory
+
 	// [4] Free the page DIRECTORY from the main memory
 
 	//YOUR CODE ENDS HERE --------------------------------------------

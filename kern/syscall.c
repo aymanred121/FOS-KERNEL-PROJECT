@@ -500,7 +500,6 @@ int sys_check_LRU_lists(uint32* active_list_content, uint32* second_list_content
 		int idx_active_list = 0;
 		LIST_FOREACH(ptr_WS_element, &(env->ActiveList))
 		{
-			cprintf("\nws_va : %x != active_va : %x \n",ROUNDDOWN(ptr_WS_element->virtual_address, PAGE_SIZE),ROUNDDOWN(active_list_content[idx_active_list], PAGE_SIZE));
 			if (ROUNDDOWN(ptr_WS_element->virtual_address, PAGE_SIZE) != ROUNDDOWN(active_list_content[idx_active_list], PAGE_SIZE))
 			{
 				active_list_validation = 0;

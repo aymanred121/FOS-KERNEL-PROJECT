@@ -21,6 +21,8 @@
 	uint32 allocation_Info[(USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE] = {0};
 	uint32 num_OF_pages_In_heap = (USER_HEAP_MAX-USER_HEAP_START)/PAGE_SIZE;
 
+// 1 000 1
+
 void* malloc(uint32 size)
 {
 	//TODO: [PROJECT 2021 - [2] User Heap] malloc() [User Side]
@@ -40,17 +42,18 @@ void* malloc(uint32 size)
 			int counter=0;
 			for(int j = i ; j < num_OF_pages_In_heap ; j++ )
 			{
-				if((j*PAGE_SIZE)+USER_HEAP_START== UH_UnAllocated_Space_Start )
+				if((j*PAGE_SIZE)+USER_HEAP_START== (UH_UnAllocated_Space_Start) )
 				{
 					if(size < USER_HEAP_MAX-UH_UnAllocated_Space_Start)
 					{
-						if(USER_HEAP_MAX-UH_UnAllocated_Space_Start <min_Satisfying_Frames_Found
+						if((USER_HEAP_MAX-UH_UnAllocated_Space_Start)/PAGE_SIZE <min_Satisfying_Frames_Found
 							|| min_Satisfying_Frames_Found ==-1)
 						{
 							uint32 final_=(UH_UnAllocated_Space_Start-USER_HEAP_START)/PAGE_SIZE;
 							 sys_allocateMem(UH_UnAllocated_Space_Start,size);
 							allocation_Info[final_]=size/PAGE_SIZE;
 							UH_UnAllocated_Space_Start+=size;
+							num_OF_Free_pages_In_heap-=size/PAGE_SIZE;
 							return (void *)(UH_UnAllocated_Space_Start-size);
 
 						}
@@ -87,6 +90,7 @@ void* malloc(uint32 size)
 		uint32 final_va=(Start_Address_OF_Min_Size*PAGE_SIZE)+USER_HEAP_START;
 	    sys_allocateMem(Start_Address_OF_Min_Size,size);
 	    allocation_Info[Start_Address_OF_Min_Size]=size/PAGE_SIZE;
+	    num_OF_Free_pages_In_heap-=size/PAGE_SIZE;
 	    return (void *)final_va;
 
 	}
