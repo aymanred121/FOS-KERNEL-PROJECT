@@ -816,21 +816,19 @@ void freeMem(struct Env* e, uint32 virtual_address, uint32 size)
 							{
 								if(LIST_SIZE(&curenv->SecondList) > 0)
 								{
-							struct WorkingSetElement* tail = LIST_FIRST(&curenv->SecondList);
-							 LIST_REMOVE(&curenv->ActiveList,it);
-							LIST_INSERT_TAIL(&curenv->ActiveList,tail);
-							LIST_REMOVE(&curenv->SecondList , tail );
-							//cprintf("list size: %d ", LIST_SIZE(&curenv->ActiveList) );
-							pt_set_page_permissions(curenv,tail->virtual_address,PERM_WRITEABLE|PERM_USER|PERM_PRESENT,0);
-							pt_set_page_permissions(curenv,it->virtual_address,0,PERM_PRESENT|PERM_WRITEABLE);
-							}
-							else
-							{
-								 LIST_REMOVE(&curenv->ActiveList,it);
-								 pt_set_page_permissions(curenv,it->virtual_address,0,PERM_PRESENT|PERM_WRITEABLE);
-
-
-							}
+									struct WorkingSetElement* tail = LIST_FIRST(&curenv->SecondList);
+									 LIST_REMOVE(&curenv->ActiveList,it);
+									LIST_INSERT_TAIL(&curenv->ActiveList,tail);
+									LIST_REMOVE(&curenv->SecondList , tail );
+									//cprintf("list size: %d ", LIST_SIZE(&curenv->ActiveList) );
+									pt_set_page_permissions(curenv,tail->virtual_address,PERM_WRITEABLE|PERM_USER|PERM_PRESENT,0);
+									pt_set_page_permissions(curenv,it->virtual_address,0,PERM_PRESENT|PERM_WRITEABLE);
+									}
+									else
+									{
+										 LIST_REMOVE(&curenv->ActiveList,it);
+										 pt_set_page_permissions(curenv,it->virtual_address,0,PERM_PRESENT|PERM_WRITEABLE);
+								}
 								 break;
 
 

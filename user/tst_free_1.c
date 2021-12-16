@@ -209,7 +209,7 @@ void _main(void)
 	{
 		uint32 tmp_addresses[3] = {0};
        cprintf("lol1\n");
-       cprintf(  "A : %x  \n, B: %x \n " , LIST_SIZE(&myEnv->ActiveList) ,  LIST_SIZE(&myEnv->SecondList) );
+	   cprintf(  "A : %d  \n, B: %d \n " , LIST_SIZE(&myEnv->ActiveList) ,  LIST_SIZE(&myEnv->SecondList) );
 		//Free 6 MB
 		int freeFrames = sys_calculate_free_frames() ;
 		int usedDiskPages = sys_pf_calculate_allocated_pages() ;
@@ -238,7 +238,7 @@ void _main(void)
 		{
 			panic("LRU lists content is not correct");
 		}
-		   cprintf(  "A : %x  \n, B: %x \n " , LIST_SIZE(&myEnv->ActiveList) ,  LIST_SIZE(&myEnv->SecondList) );
+		   cprintf(  "A : %d  \n, B: %d \n " , LIST_SIZE(&myEnv->ActiveList) ,  LIST_SIZE(&myEnv->SecondList) );
 	     cprintf("lol2\n");
 		//Free 1st 2 MB
 		freeFrames = sys_calculate_free_frames() ;
@@ -262,7 +262,7 @@ void _main(void)
 		{
 				panic("free: page is not removed from LRU lists");
 		}
-        cprintf(  "A : %x  \n, B: %x \n " , LIST_SIZE(&myEnv->ActiveList) ,  LIST_SIZE(&myEnv->SecondList) );
+		   cprintf(  "A : %d  \n, B: %d \n " , LIST_SIZE(&myEnv->ActiveList) ,  LIST_SIZE(&myEnv->SecondList) );
 		if(LIST_SIZE(&myEnv->ActiveList) != 799 && LIST_SIZE(&myEnv->SecondList) != 0)
 		{
 			panic("LRU lists content is not correct");
@@ -289,6 +289,7 @@ void _main(void)
 				panic("free: page is not removed from LRU lists");
 		}
 
+		   cprintf(  "A : %d  \n, B: %d \n " , LIST_SIZE(&myEnv->ActiveList) ,  LIST_SIZE(&myEnv->SecondList) );
 		if(LIST_SIZE(&myEnv->ActiveList) != 797 && LIST_SIZE(&myEnv->SecondList) != 0)
 		{
 			panic("LRU lists content is not correct");
@@ -317,6 +318,7 @@ void _main(void)
 				panic("free: page is not removed from LRU lists");
 		}
 
+		   cprintf(  "A : %d  \n, B: %d \n " , LIST_SIZE(&myEnv->ActiveList) ,  LIST_SIZE(&myEnv->SecondList) );
 		if(LIST_SIZE(&myEnv->ActiveList) != 795 && LIST_SIZE(&myEnv->SecondList) != 0)
 		{
 			panic("LRU lists content is not correct");
@@ -350,7 +352,7 @@ void _main(void)
 		{
 				panic("free: page is not removed from LRU lists");
 		}
-
+		   cprintf(  "A : %d  \n, B: %d \n " , LIST_SIZE(&myEnv->ActiveList) ,  LIST_SIZE(&myEnv->SecondList) );
 		if(LIST_SIZE(&myEnv->ActiveList) != 794 && LIST_SIZE(&myEnv->SecondList) != 0)
 		{
 			panic("LRU lists content is not correct");
@@ -384,6 +386,7 @@ void _main(void)
 		{
 				panic("free: page is not removed from LRU lists");
 		}
+		   cprintf(  "A : %d  \n, B: %d \n " , LIST_SIZE(&myEnv->ActiveList) ,  LIST_SIZE(&myEnv->SecondList) );
 
 		if(LIST_SIZE(&myEnv->ActiveList) != 792 && LIST_SIZE(&myEnv->SecondList) != 0)
 		{
