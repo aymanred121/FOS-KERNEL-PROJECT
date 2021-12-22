@@ -486,17 +486,6 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 	// Check if fault is in second list O(1)
 	struct WorkingSetElement* repeatElm = LIST_FIRST(&curenv->PageWorkingSetList);
 
-	///// TEMP
-	struct WorkingSetElement * it = NULL;
-	LIST_FOREACH(it,&(curenv->SecondList))
-	{
-		if(it->virtual_address == fault_va)
-		{
-			repeatElm = it;
-		}
-	}
-	///// TEMP
-
 	if (pt_get_page_permissions(curenv, fault_va) & 0x020)
 	{
 		repeatElm->virtual_address = fault_va;
