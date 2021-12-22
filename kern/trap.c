@@ -484,10 +484,9 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 
 	fault_va = ROUNDDOWN(fault_va,PAGE_SIZE);
 	// Check if fault is in second list O(1)
-	struct WorkingSetElement* repeatElm = LIST_FIRST(&curenv->PageWorkingSetList);
-
 	if (pt_get_page_permissions(curenv, fault_va) & 0x020)
 	{
+		struct WorkingSetElement* repeatElm = getHashItem(fault_va);
 		repeatElm->virtual_address = fault_va;
 		struct WorkingSetElement* tail = LIST_LAST(&curenv->ActiveList);
 		LIST_REMOVE(&curenv->SecondList,repeatElm);
