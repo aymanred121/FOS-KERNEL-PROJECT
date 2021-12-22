@@ -483,33 +483,62 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 	// Write your code here, remove the panic and write your code
 
 	fault_va = ROUNDDOWN(fault_va,PAGE_SIZE);
+	// Check if fault is in second list O(1)
+	struct WorkingSetElement* repeatElm = LIST_FIRST(&curenv->PageWorkingSetList);
 
-	// check if in SecondList and move to Active list
+	///// TEMP
 	struct WorkingSetElement * it = NULL;
 	LIST_FOREACH(it,&(curenv->SecondList))
 	{
 		if(it->virtual_address == fault_va)
 		{
+			repeatElm = it;
+		}
+	}
+	///// TEMP
+
+	if (pt_get_page_permissions(curenv, fault_va) & 0x020)
+	{
+		repeatElm->virtual_address = fault_va;
+		struct WorkingSetElement* tail = LIST_LAST(&curenv->ActiveList);
+		LIST_REMOVE(&curenv->SecondList,repeatElm);
+		LIST_REMOVE(&curenv->ActiveList,tail);
+
+		LIST_INSERT_HEAD(&curenv->ActiveList,repeatElm);
+		LIST_INSERT_HEAD(&curenv->SecondList,tail);
+		addHashItem(tail->virtual_address, tail);
+		pt_set_page_permissions(curenv,repeatElm->virtual_address,PERM_WRITEABLE|PERM_USER|PERM_PRESENT,0);
+		pt_set_page_permissions(curenv,tail->virtual_address,0,PERM_PRESENT|PERM_WRITEABLE);
+
+		return;
+	}
+	// check if in SecondList and move to Active list
+	/*
+	struct WorkingSetElement * it = NULL;
+	LIST_FOREACH(it,&(curenv->SecondList))
+	{
+		if(it->virtual_address == fault_va)
+		{
+			cprintf("page in second list");
 			struct WorkingSetElement* tail = LIST_LAST(&curenv->ActiveList);
 			LIST_REMOVE(&curenv->SecondList,it);
 			LIST_REMOVE(&curenv->ActiveList,tail);
 
-
 			LIST_INSERT_HEAD(&curenv->ActiveList,it);
 			LIST_INSERT_HEAD(&curenv->SecondList,tail);
-
-
 
 			pt_set_page_permissions(curenv,it->virtual_address,PERM_WRITEABLE|PERM_USER|PERM_PRESENT,0);
 			pt_set_page_permissions(curenv,tail->virtual_address,0,PERM_PRESENT|PERM_WRITEABLE);
 
+			///// TEMP
+			print_page_working_set_or_LRUlists(curenv);
+			///// TEMP
+
 			return;
-
-
 		}
-	}
+	}*/
 
-    // map to a frame and check if it's in page file or not and if it's not check if it's in the stack
+	// map to a frame and check if it's in page file or not and if it's not check if it's in the stack
 	struct Frame_Info * ptr_frame = NULL;
 	uint32* page_table = NULL;
 	int alo = allocate_frame(&ptr_frame);
@@ -525,10 +554,9 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 		{
 			panic("Invalid Access");
 		}
-
 	}
 
-    // if ActiveList isn't full
+	// if ActiveList isn't full
 	if(LIST_SIZE(&curenv->ActiveList) != curenv->ActiveListSize)
 	{
 		struct WorkingSetElement * elm = LIST_FIRST(&curenv->PageWorkingSetList);
@@ -536,7 +564,7 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 		LIST_REMOVE(&curenv->PageWorkingSetList,elm);
 		LIST_INSERT_HEAD(&curenv->ActiveList,elm);
 	}
-	// if ActiveList is full
+		// if ActiveList is full
 	else
 	{
 		struct WorkingSetElement *Stail = LIST_LAST(&curenv->SecondList);
@@ -566,6 +594,7 @@ void page_fault_handler(struct Env * curenv, uint32 fault_va)
 
 		LIST_REMOVE(&curenv->ActiveList,Atail);
 		LIST_INSERT_HEAD(&curenv->SecondList,Atail);
+		addHashItem(Atail->virtual_address, Atail);
 		pt_set_page_permissions(curenv, Atail->virtual_address,0, PERM_PRESENT|PERM_WRITEABLE);
 
 		Stail->virtual_address= fault_va;
