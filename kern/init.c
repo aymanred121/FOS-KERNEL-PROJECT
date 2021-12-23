@@ -50,6 +50,7 @@ void FOS_initialize()
 	detect_memory();
 	initialize_kernel_VM();
 	initialize_paging();
+	initHashArray();
 //	page_check();
 
 

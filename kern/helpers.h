@@ -20,6 +20,8 @@ uint32 number_of_frames;	// Amount of physical memory (in frames)
 
 extern uint32* ptr_page_directory;
 extern uint32 phys_page_directory;
+extern uint32 hashCap;
+extern struct WorkingSetElement* hashArr[];
 extern char* ptr_free_mem;
 
 extern struct Frame_Info *frames_info;
@@ -76,6 +78,9 @@ void 	turn_on_paging();
 void	tlb_invalidate(uint32 *pgdir, void *ptr);
 void	check_boot_pgdir();
 void	setup_listing_to_all_page_tables_entries();
+void	initHashArray();
+void	addHashItem(uint32 key, struct WorkingSetElement* value);
 int envid2env(int32  envid, struct Env **env_store, bool checkperm);
-
+uint32 hashFunc(uint32 key);
+struct WorkingSetElement* getHashItem(uint32 key);
 #endif /* !FOS_KERN_HELPER_H */

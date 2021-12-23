@@ -864,14 +864,17 @@ int command_run_program(int number_of_arguments, char **arguments)
 
 	if(env == NULL) return 0;
 	cprintf("\nEnvironment Id= %d\n",env->env_id);
-
+	cprintf("Hashing ");
 	numOfKheapVACalls = 0;
-  //  cprintf("hi1");
-	sched_new_env(env);
-  //  cprintf("hi2");
 
+	sched_new_env(env);
+	// Initialize hash table
+	struct WorkingSetElement* elm;
+	LIST_FOREACH(elm, &(env->SecondList))
+	{
+		addHashItem(elm->virtual_address, elm);
+	}
 	sched_run_env(env->env_id);
-  //  cprintf("hi3");
 
 	return 0;
 }
