@@ -25,35 +25,33 @@ FUNCTIONS:	to_physical_address, get_frame_info, tlb_invalidate
 #include <kern/kheap.h>
 #include <kern/file_manager.h>
 
-extern uint32 number_of_frames;	// Amount of physical memory (in frames_info)
+extern uint32 number_of_frames;		// Amount of physical memory (in frames_info)
 extern uint32 size_of_base_mem;		// Amount of base memory (in bytes)
-extern uint32 size_of_extended_mem;		// Amount of extended memory (in bytes)
+extern uint32 size_of_extended_mem; // Amount of extended memory (in bytes)
 
 inline uint32 env_table_ws_get_size(struct Env *e);
-inline void env_table_ws_invalidate(struct Env* e, uint32 virtual_address);
-inline void env_table_ws_set_entry(struct Env* e, uint32 entry_index, uint32 virtual_address);
-inline void env_table_ws_clear_entry(struct Env* e, uint32 entry_index);
-inline uint32 env_table_ws_get_virtual_address(struct Env* e, uint32 entry_index);
-inline uint32 env_table_ws_is_entry_empty(struct Env* e, uint32 entry_index);
+inline void env_table_ws_invalidate(struct Env *e, uint32 virtual_address);
+inline void env_table_ws_set_entry(struct Env *e, uint32 entry_index, uint32 virtual_address);
+inline void env_table_ws_clear_entry(struct Env *e, uint32 entry_index);
+inline uint32 env_table_ws_get_virtual_address(struct Env *e, uint32 entry_index);
+inline uint32 env_table_ws_is_entry_empty(struct Env *e, uint32 entry_index);
 void env_table_ws_print(struct Env *curenv);
 
 inline uint32 pd_is_table_used(struct Env *e, uint32 virtual_address);
 inline void pd_set_table_unused(struct Env *e, uint32 virtual_address);
 inline void pd_clear_page_dir_entry(struct Env *e, uint32 virtual_address);
 
-
 // These variables are set in initialize_kernel_VM()
-uint32* ptr_page_directory;		// Virtual address of boot time page directory
-uint8* ptr_zero_page;		// Virtual address of zero page used by program loader to initialize extra segment zero memory (bss section) it to zero
-uint8* ptr_temp_page;		// Virtual address of a page used by program loader to initialize segment last page fraction
-uint32 phys_page_directory;		// Physical address of boot time page directory
-char* ptr_free_mem;	// Pointer to next byte of free mem
+uint32 *ptr_page_directory; // Virtual address of boot time page directory
+uint8 *ptr_zero_page;		// Virtual address of zero page used by program loader to initialize extra segment zero memory (bss section) it to zero
+uint8 *ptr_temp_page;		// Virtual address of a page used by program loader to initialize segment last page fraction
+uint32 phys_page_directory; // Physical address of boot time page directory
+char *ptr_free_mem;			// Pointer to next byte of free mem
 
-struct Frame_Info* frames_info;		// Virtual address of physical frames_info array
-struct Frame_Info* disk_frames_info;		// Virtual address of physical frames_info array
-struct Linked_List free_frame_list;	// Free list of physical frames_info
+struct Frame_Info *frames_info;		 // Virtual address of physical frames_info array
+struct Frame_Info *disk_frames_info; // Virtual address of physical frames_info array
+struct Linked_List free_frame_list;	 // Free list of physical frames_info
 struct Linked_List modified_frame_list;
-
 
 ///**************************** MAPPING KERNEL SPACE *******************************
 
@@ -88,7 +86,7 @@ void initialize_kernel_VM()
 	// to physical address : "phys_stack_bottom".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
-	boot_map_range(ptr_page_directory, KERNEL_STACK_TOP - KERNEL_STACK_SIZE, KERNEL_STACK_SIZE, STATIC_KERNEL_PHYSICAL_ADDRESS(ptr_stack_bottom), PERM_WRITEABLE) ;
+	boot_map_range(ptr_page_directory, KERNEL_STACK_TOP - KERNEL_STACK_SIZE, KERNEL_STACK_SIZE, STATIC_KERNEL_PHYSICAL_ADDRESS(ptr_stack_bottom), PERM_WRITEABLE);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNEL_BASE.
@@ -102,8 +100,8 @@ void initialize_kernel_VM()
 	//2016:
 	//boot tables
 	unsigned long long sva = KERNEL_BASE;
-	unsigned int nTables=0;
-	for (;sva < 0xFFFFFFFF;  sva += PTSIZE)
+	unsigned int nTables = 0;
+	for (; sva < 0xFFFFFFFF; sva += PTSIZE)
 	{
 		++nTables;
 		boot_get_page_table(ptr_page_directory, (uint32)sva, 1);
@@ -127,7 +125,7 @@ void initialize_kernel_VM()
 	// Your code goes here:
 	//cprintf("size of WorkingSetPage = %d\n",sizeof(struct WorkingSetPage));
 	uint32 array_size;
-	array_size = number_of_frames * sizeof(struct Frame_Info) ;
+	array_size = number_of_frames * sizeof(struct Frame_Info);
 	frames_info = boot_allocate_space(array_size, PAGE_SIZE);
 	memset(frames_info, 0, array_size);
 
@@ -135,10 +133,9 @@ void initialize_kernel_VM()
 	// 		size of "frames_info" can exceed the 4 MB space for "READ_ONLY_FRAMES_INFO"
 	//boot_map_range(ptr_page_directory, READ_ONLY_FRAMES_INFO, array_size, STATIC_KERNEL_PHYSICAL_ADDRESS(frames_info),PERM_USER) ;
 
-
 	uint32 disk_array_size = PAGES_PER_FILE * sizeof(struct Frame_Info);
-	disk_frames_info = boot_allocate_space(disk_array_size , PAGE_SIZE);
-	memset(disk_frames_info , 0, disk_array_size);
+	disk_frames_info = boot_allocate_space(disk_array_size, PAGE_SIZE);
+	memset(disk_frames_info, 0, disk_array_size);
 
 	// This allows the kernel & user to access any page table entry using a
 	// specified VA for each: VPT for kernel and UVPT for User.
@@ -153,42 +150,41 @@ void initialize_kernel_VM()
 	//    - the image of envs mapped at UENVS  -- kernel R, user R
 
 	// LAB 3: Your code here.
-	cprintf("Max Envs = %d\n",NENV);
-	int envs_size = NENV * sizeof(struct Env) ;
+	cprintf("Max Envs = %d\n", NENV);
+	int envs_size = NENV * sizeof(struct Env);
 
 	//allocate space for "envs" array aligned on 4KB boundary
 	envs = boot_allocate_space(envs_size, PAGE_SIZE);
-	memset(envs , 0, envs_size);
+	memset(envs, 0, envs_size);
 
 	//make the user to access this array by mapping it to UPAGES linear address (UPAGES is in User/Kernel space)
-	boot_map_range(ptr_page_directory, UENVS, envs_size, STATIC_KERNEL_PHYSICAL_ADDRESS(envs), PERM_USER) ;
+	boot_map_range(ptr_page_directory, UENVS, envs_size, STATIC_KERNEL_PHYSICAL_ADDRESS(envs), PERM_USER);
 
 	//update permissions of the corresponding entry in page directory to make it USER with PERMISSION read only
-	ptr_page_directory[PDX(UENVS)] = ptr_page_directory[PDX(UENVS)]|(PERM_USER|(PERM_PRESENT & (~PERM_WRITEABLE)));
-
+	ptr_page_directory[PDX(UENVS)] = ptr_page_directory[PDX(UENVS)] | (PERM_USER | (PERM_PRESENT & (~PERM_WRITEABLE)));
 
 #if USE_KHEAP
 	{
 		// MAKE SURE THAT THIS MAPPING HAPPENS AFTER ALL BOOT ALLOCATIONS (boot_allocate_space)
 		// calls are fininshed, and no remaining data to be allocated for the kernel
 		// map all used pages so far for the kernel
-		boot_map_range(ptr_page_directory, KERNEL_BASE, (uint32)ptr_free_mem - KERNEL_BASE, 0, PERM_WRITEABLE) ;
+		boot_map_range(ptr_page_directory, KERNEL_BASE, (uint32)ptr_free_mem - KERNEL_BASE, 0, PERM_WRITEABLE);
 	}
 #else
 	{
-		boot_map_range(ptr_page_directory, KERNEL_BASE, 0xFFFFFFFF - KERNEL_BASE, 0, PERM_WRITEABLE) ;
+		boot_map_range(ptr_page_directory, KERNEL_BASE, 0xFFFFFFFF - KERNEL_BASE, 0, PERM_WRITEABLE);
 	}
 #endif
 	// Check that the initial page directory has been set up correctly.
 	check_boot_pgdir();
 
-	memory_scarce_threshold_percentage = DEFAULT_MEM_SCARCE_PERCENTAGE;	// Memory remains plentiful till % of free frames gets below 25% of the memory space
+	memory_scarce_threshold_percentage = DEFAULT_MEM_SCARCE_PERCENTAGE; // Memory remains plentiful till % of free frames gets below 25% of the memory space
 
 	/*
 	NOW: Turn off the segmentation by setting the segments' base to 0, and
 	turn on the paging by setting the corresponding flags in control register 0 (cr0)
 	 */
-	turn_on_paging() ;
+	turn_on_paging();
 }
 
 //
@@ -202,7 +198,7 @@ void initialize_kernel_VM()
 // This function may ONLY be used during boot time,
 // before the free_frame_list has been set up.
 //
-void* boot_allocate_space(uint32 size, uint32 align)
+void *boot_allocate_space(uint32 size, uint32 align)
 {
 	extern char end_of_kernel[];
 
@@ -216,23 +212,21 @@ void* boot_allocate_space(uint32 size, uint32 align)
 
 	// Your code here:
 	//	Step 1: round ptr_free_mem up to be aligned properly
-	ptr_free_mem = ROUNDUP(ptr_free_mem, align) ;
+	ptr_free_mem = ROUNDUP(ptr_free_mem, align);
 
 	//	Step 2: save current value of ptr_free_mem as allocated space
 	void *ptr_allocated_mem;
-	ptr_allocated_mem = ptr_free_mem ;
+	ptr_allocated_mem = ptr_free_mem;
 
 	//	Step 3: increase ptr_free_mem to record allocation
-	ptr_free_mem += size ;
+	ptr_free_mem += size;
 
 	//// 2016: Step 3.5: initialize allocated space by ZEROOOOOOOOOOOOOO
 	//memset(ptr_allocated_mem, 0, size);
 
 	//	Step 4: return allocated space
-	return ptr_allocated_mem ;
-
+	return ptr_allocated_mem;
 }
-
 
 //
 // Map [virtual_address, virtual_address+size) of virtual address space to
@@ -246,19 +240,19 @@ void* boot_allocate_space(uint32 size, uint32 align)
 //
 void boot_map_range(uint32 *ptr_page_directory, uint32 virtual_address, uint32 size, uint32 physical_address, int perm)
 {
-	int i = 0 ;
+	int i = 0;
 	//physical_address = ROUNDUP(physical_address, PAGE_SIZE) ;
 	///we assume here that all addresses are given divisible by 4 KB, look at boot_allocate_space ...
 
-	for (i = 0 ; i < size ; i += PAGE_SIZE)
+	for (i = 0; i < size; i += PAGE_SIZE)
 	{
-		uint32 *ptr_page_table = boot_get_page_table(ptr_page_directory, virtual_address, 1) ;
+		uint32 *ptr_page_table = boot_get_page_table(ptr_page_directory, virtual_address, 1);
 		uint32 index_page_table = PTX(virtual_address);
 		//LOG_VARS("\nCONSTRUCT_ENTRY = %x",physical_address);
-		ptr_page_table[index_page_table] = CONSTRUCT_ENTRY(physical_address, perm | PERM_PRESENT) ;
+		ptr_page_table[index_page_table] = CONSTRUCT_ENTRY(physical_address, perm | PERM_PRESENT);
 
-		physical_address += PAGE_SIZE ;
-		virtual_address += PAGE_SIZE ;
+		physical_address += PAGE_SIZE;
+		virtual_address += PAGE_SIZE;
 	}
 }
 
@@ -281,7 +275,7 @@ void boot_map_range(uint32 *ptr_page_directory, uint32 virtual_address, uint32 s
 // This function may ONLY be used during boot time,
 // before the free_frame_list has been set up.
 //
-uint32* boot_get_page_table(uint32 *ptr_page_directory, uint32 virtual_address, int create)
+uint32 *boot_get_page_table(uint32 *ptr_page_directory, uint32 virtual_address, int create)
 {
 	uint32 index_page_directory = PDX(virtual_address);
 	uint32 page_directory_entry = ptr_page_directory[index_page_directory];
@@ -293,21 +287,18 @@ uint32* boot_get_page_table(uint32 *ptr_page_directory, uint32 virtual_address, 
 	{
 		if (create)
 		{
-			ptr_page_table = boot_allocate_space(PAGE_SIZE, PAGE_SIZE) ;
+			ptr_page_table = boot_allocate_space(PAGE_SIZE, PAGE_SIZE);
 			phys_page_table = STATIC_KERNEL_PHYSICAL_ADDRESS(ptr_page_table);
 			ptr_page_directory[index_page_directory] = CONSTRUCT_ENTRY(phys_page_table, PERM_PRESENT | PERM_WRITEABLE);
-			return ptr_page_table ;
+			return ptr_page_table;
 		}
 		else
-			return 0 ;
+			return 0;
 	}
-	return ptr_page_table ;
+	return ptr_page_table;
 }
 
 ///******************************* END of MAPPING KERNEL SPACE *******************************
-
-
-
 
 ///******************************* MAPPING USER SPACE *******************************
 
@@ -346,18 +337,18 @@ void initialize_paging()
 	frames_info[0].references = 1;
 	frames_info[1].references = 1;
 	frames_info[2].references = 1;
-	ptr_zero_page = (uint8*) KERNEL_BASE+PAGE_SIZE;
-	ptr_temp_page = (uint8*) KERNEL_BASE+2*PAGE_SIZE;
-	i =0;
-	for(;i<1024; i++)
+	ptr_zero_page = (uint8 *)KERNEL_BASE + PAGE_SIZE;
+	ptr_temp_page = (uint8 *)KERNEL_BASE + 2 * PAGE_SIZE;
+	i = 0;
+	for (; i < 1024; i++)
 	{
-		ptr_zero_page[i]=0;
-		ptr_temp_page[i]=0;
+		ptr_zero_page[i] = 0;
+		ptr_temp_page[i] = 0;
 	}
 
-	int range_end = ROUNDUP(PHYS_IO_MEM,PAGE_SIZE);
+	int range_end = ROUNDUP(PHYS_IO_MEM, PAGE_SIZE);
 
-	for (i = 3; i < range_end/PAGE_SIZE; i++)
+	for (i = 3; i < range_end / PAGE_SIZE; i++)
 	{
 
 		initialize_frame_info(&(frames_info[i]));
@@ -366,19 +357,19 @@ void initialize_paging()
 		LIST_INSERT_HEAD(&free_frame_list, &frames_info[i]);
 	}
 
-	for (i = PHYS_IO_MEM/PAGE_SIZE ; i < PHYS_EXTENDED_MEM/PAGE_SIZE; i++)
+	for (i = PHYS_IO_MEM / PAGE_SIZE; i < PHYS_EXTENDED_MEM / PAGE_SIZE; i++)
 	{
 		frames_info[i].references = 1;
 	}
 
 	range_end = ROUNDUP(STATIC_KERNEL_PHYSICAL_ADDRESS(ptr_free_mem), PAGE_SIZE);
 
-	for (i = PHYS_EXTENDED_MEM/PAGE_SIZE ; i < range_end/PAGE_SIZE; i++)
+	for (i = PHYS_EXTENDED_MEM / PAGE_SIZE; i < range_end / PAGE_SIZE; i++)
 	{
 		frames_info[i].references = 1;
 	}
 
-	for (i = range_end/PAGE_SIZE ; i < number_of_frames; i++)
+	for (i = range_end / PAGE_SIZE; i < number_of_frames; i++)
 	{
 		initialize_frame_info(&(frames_info[i]));
 
@@ -427,17 +418,16 @@ int allocate_frame(struct Frame_Info **ptr_frame_info)
 		// When allocating new frame, if there's no free frame, then you should:
 		//	1-	If any process has exited (those with status ENV_EXIT), then remove one or more of these exited processes from the main memory
 		//	2-	otherwise, free at least 1 frame from the second list of the working set of EACH process
-
 	}
 
-	LIST_REMOVE(&free_frame_list,*ptr_frame_info);
+	LIST_REMOVE(&free_frame_list, *ptr_frame_info);
 
 	/******************* PAGE BUFFERING CODE *******************
 	 ***********************************************************/
 
-	if((*ptr_frame_info)->isBuffered)
+	if ((*ptr_frame_info)->isBuffered)
 	{
-		pt_clear_page_table_entry((*ptr_frame_info)->environment,(*ptr_frame_info)->va);
+		pt_clear_page_table_entry((*ptr_frame_info)->environment, (*ptr_frame_info)->va);
 		//pt_set_page_permissions((*ptr_frame_info)->environment->env_pgdir, (*ptr_frame_info)->va, 0, PERM_BUFFERED);
 	}
 
@@ -467,7 +457,7 @@ void free_frame(struct Frame_Info *ptr_frame_info)
 // Decrement the reference count on a frame
 // freeing it if there are no more references.
 //
-void decrement_references(struct Frame_Info* ptr_frame_info)
+void decrement_references(struct Frame_Info *ptr_frame_info)
 {
 	if (--(ptr_frame_info->references) == 0)
 		free_frame(ptr_frame_info);
@@ -488,17 +478,17 @@ int get_page_table(uint32 *ptr_page_directory, const void *virtual_address, uint
 	uint32 page_directory_entry = ptr_page_directory[PDX(virtual_address)];
 
 	//	cprintf("gpt .07, page_directory_entry= %x \n",page_directory_entry);
-	if(USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(virtual_address))
+	if (USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(virtual_address))
 	{
-		*ptr_page_table = (void *)kheap_virtual_address(EXTRACT_ADDRESS(page_directory_entry)) ;
+		*ptr_page_table = (void *)kheap_virtual_address(EXTRACT_ADDRESS(page_directory_entry));
 		//cprintf("===>get_page_table: page_dir_entry = %x ptr_page_table = %x\n", page_directory_entry,*ptr_page_table);
 	}
 	else
 	{
-		*ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(EXTRACT_ADDRESS(page_directory_entry)) ;
+		*ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(EXTRACT_ADDRESS(page_directory_entry));
 	}
 
-	if ( (page_directory_entry & PERM_PRESENT) == PERM_PRESENT)
+	if ((page_directory_entry & PERM_PRESENT) == PERM_PRESENT)
 	{
 		return TABLE_IN_MEMORY;
 	}
@@ -507,7 +497,7 @@ int get_page_table(uint32 *ptr_page_directory, const void *virtual_address, uint
 		// Put the faulted address in CR2 and then
 		// Call the fault_handler() to load the table in memory for us ...
 		//		cprintf("gpt .1\n, %x page_directory_entry\n", page_directory_entry);
-		lcr2((uint32)virtual_address) ;
+		lcr2((uint32)virtual_address);
 
 		//		cprintf("gpt .12\n");
 		fault_handler(NULL);
@@ -516,13 +506,13 @@ int get_page_table(uint32 *ptr_page_directory, const void *virtual_address, uint
 		// now the page_fault_handler() should have returned successfully and updated the
 		// directory with the new table frame number in memory
 		page_directory_entry = ptr_page_directory[PDX(virtual_address)];
-		if(USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(virtual_address))
+		if (USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(virtual_address))
 		{
-			*ptr_page_table = (void *)kheap_virtual_address(EXTRACT_ADDRESS(page_directory_entry)) ;
+			*ptr_page_table = (void *)kheap_virtual_address(EXTRACT_ADDRESS(page_directory_entry));
 		}
 		else
 		{
-			*ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(EXTRACT_ADDRESS(page_directory_entry)) ;
+			*ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(EXTRACT_ADDRESS(page_directory_entry));
 		}
 
 		return TABLE_IN_MEMORY;
@@ -535,7 +525,7 @@ int get_page_table(uint32 *ptr_page_directory, const void *virtual_address, uint
 	}
 }
 
-void * create_page_table(uint32 *ptr_page_directory, const uint32 virtual_address)
+void *create_page_table(uint32 *ptr_page_directory, const uint32 virtual_address)
 {
 	panic("this function is not required...!!");
 	return NULL;
@@ -543,15 +533,15 @@ void * create_page_table(uint32 *ptr_page_directory, const uint32 virtual_addres
 
 void __static_cpt(uint32 *ptr_page_directory, const uint32 virtual_address, uint32 **ptr_page_table)
 {
-	struct Frame_Info* ptr_new_frame_info;
-	int err = allocate_frame(&ptr_new_frame_info) ;
+	struct Frame_Info *ptr_new_frame_info;
+	int err = allocate_frame(&ptr_new_frame_info);
 
 	uint32 phys_page_table = to_physical_address(ptr_new_frame_info);
-	*ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(phys_page_table) ;
+	*ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(phys_page_table);
 	ptr_new_frame_info->references = 1;
 	ptr_page_directory[PDX(virtual_address)] = CONSTRUCT_ENTRY(phys_page_table, PERM_PRESENT | PERM_USER | PERM_WRITEABLE);
 	//initialize new page table by 0's
-	memset(*ptr_page_table , 0, PAGE_SIZE);
+	memset(*ptr_page_table, 0, PAGE_SIZE);
 	tlbflush();
 }
 //
@@ -575,7 +565,7 @@ int map_frame(uint32 *ptr_page_directory, struct Frame_Info *ptr_frame_info, voi
 	// Fill this function in
 	uint32 physical_address = to_physical_address(ptr_frame_info);
 	uint32 *ptr_page_table;
-	if( get_page_table(ptr_page_directory, virtual_address, &ptr_page_table) == TABLE_NOT_EXIST)
+	if (get_page_table(ptr_page_directory, virtual_address, &ptr_page_table) == TABLE_NOT_EXIST)
 	{
 		/*==========================================================================================
 		// OLD WRONG SOLUTION
@@ -596,7 +586,7 @@ int map_frame(uint32 *ptr_page_directory, struct Frame_Info *ptr_frame_info, voi
 		{
 			ptr_page_table = create_page_table(ptr_page_directory, (uint32)virtual_address);
 			//cprintf("======>page table created using kheap at dir = %x PT = %x\n", ptr_page_directory[PDX(virtual_address)], ptr_page_table);
-			uint32* ptr_page_table2 =NULL;
+			uint32 *ptr_page_table2 = NULL;
 			//cprintf("======> After the table created at %x\n\n", get_page_table(ptr_page_directory, virtual_address,&ptr_page_table2));
 		}
 #else
@@ -604,7 +594,6 @@ int map_frame(uint32 *ptr_page_directory, struct Frame_Info *ptr_frame_info, voi
 			__static_cpt(ptr_page_directory, (uint32)virtual_address, &ptr_page_table);
 		}
 #endif
-
 	}
 
 	//cprintf("NOW .. map add = %x ptr_page_table = %x PTX(virtual_address) = %d\n", virtual_address, ptr_page_table,PTX(virtual_address));
@@ -631,10 +620,10 @@ int map_frame(uint32 *ptr_page_directory, struct Frame_Info *ptr_frame_info, voi
 			return 0;
 		//on another pa, then unmap it
 		else
-			unmap_frame(ptr_page_directory , virtual_address);
+			unmap_frame(ptr_page_directory, virtual_address);
 	}
 	ptr_frame_info->references++;
-	ptr_page_table[PTX(virtual_address)] = CONSTRUCT_ENTRY(physical_address , perm | PERM_PRESENT);
+	ptr_page_table[PTX(virtual_address)] = CONSTRUCT_ENTRY(physical_address, perm | PERM_PRESENT);
 
 	return 0;
 }
@@ -649,21 +638,21 @@ int map_frame(uint32 *ptr_page_directory, struct Frame_Info *ptr_frame_info, voi
 //
 // Hint: implement using get_page_table() and get_frame_info().
 //
-struct Frame_Info * get_frame_info(uint32 *ptr_page_directory, void *virtual_address, uint32 **ptr_page_table)
+struct Frame_Info *get_frame_info(uint32 *ptr_page_directory, void *virtual_address, uint32 **ptr_page_table)
 {
 	// Fill this function in
 	//cprintf(".gfi .1\n %x, %x, %x, \n", ptr_page_directory, virtual_address, ptr_page_table);
-	uint32 ret =  get_page_table(ptr_page_directory, virtual_address, ptr_page_table) ;
+	uint32 ret = get_page_table(ptr_page_directory, virtual_address, ptr_page_table);
 	//cprintf(".gfi .15\n");
-	if((*ptr_page_table) != 0)
+	if ((*ptr_page_table) != 0)
 	{
 		uint32 index_page_table = PTX(virtual_address);
 		//cprintf(".gfi .2\n");
 		uint32 page_table_entry = (*ptr_page_table)[index_page_table];
-		if( page_table_entry != 0)
+		if (page_table_entry != 0)
 		{
 			//cprintf(".gfi .3\n");
-			return to_frame_info( EXTRACT_ADDRESS ( page_table_entry ) );
+			return to_frame_info(EXTRACT_ADDRESS(page_table_entry));
 		}
 		return 0;
 	}
@@ -688,17 +677,16 @@ void unmap_frame(uint32 *ptr_page_directory, void *virtual_address)
 {
 	// Fill this function in
 	uint32 *ptr_page_table;
-	struct Frame_Info* ptr_frame_info = get_frame_info(ptr_page_directory, virtual_address, &ptr_page_table);
-	if( ptr_frame_info != 0 )
+	struct Frame_Info *ptr_frame_info = get_frame_info(ptr_page_directory, virtual_address, &ptr_page_table);
+	if (ptr_frame_info != 0)
 	{
 		if (ptr_frame_info->isBuffered && !CHECK_IF_KERNEL_ADDRESS((uint32)virtual_address))
-			cprintf("Freeing BUFFERED frame at va %x!!!\n", virtual_address) ;
+			cprintf("Freeing BUFFERED frame at va %x!!!\n", virtual_address);
 		decrement_references(ptr_frame_info);
 		ptr_page_table[PTX(virtual_address)] = 0;
 		tlb_invalidate(ptr_page_directory, virtual_address);
 	}
 }
-
 
 /*/this function should be called only in the env_create() for creating the page table if not exist
  * (without causing page fault as the normal map_frame())*/
@@ -723,13 +711,13 @@ int loadtime_map_frame(uint32 *ptr_page_directory, struct Frame_Info *ptr_frame_
 
 	uint32 page_directory_entry = ptr_page_directory[PDX(virtual_address)];
 
-	if(USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(virtual_address))
+	if (USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(virtual_address))
 	{
-		ptr_page_table = (uint32*)kheap_virtual_address(EXTRACT_ADDRESS(page_directory_entry)) ;
+		ptr_page_table = (uint32 *)kheap_virtual_address(EXTRACT_ADDRESS(page_directory_entry));
 	}
 	else
 	{
-		ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(EXTRACT_ADDRESS(page_directory_entry)) ;
+		ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(EXTRACT_ADDRESS(page_directory_entry));
 	}
 
 	//if page table not exist, create it in memory and link it with the directory
@@ -747,16 +735,14 @@ int loadtime_map_frame(uint32 *ptr_page_directory, struct Frame_Info *ptr_frame_
 	}
 
 	ptr_frame_info->references++;
-	ptr_page_table[PTX(virtual_address)] = CONSTRUCT_ENTRY(physical_address , perm | PERM_PRESENT);
+	ptr_page_table[PTX(virtual_address)] = CONSTRUCT_ENTRY(physical_address, perm | PERM_PRESENT);
 
 	return 0;
 }
 
-
 ///****************************************************************************************///
 ///******************************* END OF MAPPING USER SPACE ******************************///
 ///****************************************************************************************///
-
 
 //======================================================
 /// functions used for malloc() and freeHeap()
@@ -764,112 +750,118 @@ int loadtime_map_frame(uint32 *ptr_page_directory, struct Frame_Info *ptr_frame_
 
 // [1] allocateMem
 
-void allocateMem(struct Env* e, uint32 virtual_address, uint32 size)
+void allocateMem(struct Env *e, uint32 virtual_address, uint32 size)
 {
 	//TODO: [PROJECT 2021 - [2] User Heap] allocateMem() [Kernel Side]
 	// Write your code here, remove the panic and write your code
 	//panic("allocateMem() is not implemented yet...!!");
-    size=ROUNDUP(size,PAGE_SIZE);
-    uint32 max= virtual_address+size;
-    for(int i=virtual_address;i<max;i+=PAGE_SIZE)
-   {
-  	 pf_add_empty_env_page(e,i,1);
-   }
+	size = ROUNDUP(size, PAGE_SIZE);
+	uint32 max = virtual_address + size;
+	for (int i = virtual_address; i < max; i += PAGE_SIZE)
+	{
+		pf_add_empty_env_page(e, i, 1);
+	}
 	//This function should allocate ALL pages of the required range in the PAGE FILE
 	//and allocate NOTHING in the main memory
 }
 
-
 // [2] freeMem
 
-void freeMem(struct Env* e, uint32 virtual_address, uint32 size)
+void freeMem(struct Env *e, uint32 virtual_address, uint32 size)
 {
 
 	//TODO: [PROJECT 2021 - [2] User Heap] freeMem() [Kernel Side]
 	// Write your code here, remove the panic and write your code
 	//panic("freeMem() is not implemented yet...!!");
-	 uint32 max=virtual_address+size;
+	uint32 max = virtual_address + size;
 	//This function should:
 	//1. Free ALL pages of the given range from the Page File
 	//2. Free ONLY pages that are resident in the working set from the memory
-    //3. Removes ONLY the empty page tables (i.e. not used) (no pages are mapped in the table)
+	//3. Removes ONLY the empty page tables (i.e. not used) (no pages are mapped in the table)
 
-
-		virtual_address = ROUNDDOWN(virtual_address, PAGE_SIZE);
-		uint32* ptr_page_table1 = NULL;
-		int flag =1;
-		//uint32 WS_Size = env_page_ws_get_size(e);
-		uint32 WS_Size = e->page_WS_max_size;
-		//cprintf ("%x, %x\n", virtual_address, size);
-		for(uint32 i =virtual_address ; i< virtual_address+size; i+=PAGE_SIZE)
+	virtual_address = ROUNDDOWN(virtual_address, PAGE_SIZE);
+	uint32 *ptr_page_table1 = NULL;
+	int flag = 1;
+	//uint32 WS_Size = env_page_ws_get_size(e);
+	uint32 WS_Size = e->page_WS_max_size;
+	//cprintf ("%x, %x\n", virtual_address, size);
+	for (uint32 i = virtual_address; i < virtual_address + size; i += PAGE_SIZE)
+	{
+		//cprintf ("%x\n", virtual_address);
+		pf_remove_env_page(e, i); //Remove From Page File
+		for (int j = 0; j < WS_Size; j++)
 		{
-			//cprintf ("%x\n", virtual_address);
-			pf_remove_env_page(e, i); //Remove From Page File
-			for (int j =0; j<WS_Size; j++)
+			if (i == env_page_ws_get_virtual_address(e, j))
+			{
+				struct WorkingSetElement *it = NULL;
+				LIST_FOREACH(it, &(e->ActiveList))
 				{
-					if(i == env_page_ws_get_virtual_address(e, j))
+					if (it->virtual_address == i)
 					{
-						struct WorkingSetElement * it = NULL;
-						LIST_FOREACH(it,&(curenv->ActiveList))
-		                {
-							if(it->virtual_address == i)
-							{
-								if(LIST_SIZE(&curenv->SecondList) > 0)
-								{
-									struct WorkingSetElement* tail = LIST_FIRST(&curenv->SecondList);
-									 LIST_REMOVE(&curenv->ActiveList,it);
-									LIST_INSERT_TAIL(&curenv->ActiveList,tail);
-									LIST_REMOVE(&curenv->SecondList , tail );
-									//cprintf("list size: %d ", LIST_SIZE(&curenv->ActiveList) );
-									pt_set_page_permissions(curenv,tail->virtual_address,PERM_WRITEABLE|PERM_USER|PERM_PRESENT,0);
-									pt_set_page_permissions(curenv,it->virtual_address,0,PERM_PRESENT|PERM_WRITEABLE);
-									}
-									else
-									{
-										 LIST_REMOVE(&curenv->ActiveList,it);
-										 pt_set_page_permissions(curenv,it->virtual_address,0,PERM_PRESENT|PERM_WRITEABLE);
-								}
-								 break;
-
-
-							}
-
-		                }
-
-						unmap_frame(e->env_page_directory, (void*)i); //Remove from RAM
-						env_page_ws_clear_entry(e, j); //Remove Entry From WS
+						if (LIST_SIZE(&e->SecondList) > 0)
+						{
+							struct WorkingSetElement *tail = LIST_FIRST(&e->SecondList);
+							LIST_REMOVE(&e->ActiveList, it);
+							LIST_INSERT_TAIL(&e->ActiveList, tail);
+							LIST_REMOVE(&e->SecondList, tail);
+							//cprintf("list size: %d ", LIST_SIZE(&curenv->ActiveList) );
+							pt_set_page_permissions(e, tail->virtual_address, PERM_WRITEABLE | PERM_USER | PERM_PRESENT, 0);
+							pt_set_page_permissions(e, it->virtual_address, 0, PERM_PRESENT | PERM_WRITEABLE | PERM_USER);
+							LIST_INSERT_HEAD(&e->PageWorkingSetList, it);
+						}
+						else
+						{
+							LIST_REMOVE(&e->ActiveList, it);
+							pt_set_page_permissions(e, it->virtual_address, 0, PERM_PRESENT | PERM_WRITEABLE | PERM_USER);
+							it->empty = 1;
+							LIST_INSERT_HEAD(&e->PageWorkingSetList, it);
+						}
 						break;
 					}
 				}
-			get_page_table(e->env_page_directory, (void*)i, &ptr_page_table1);
-			flag=1;
-			if(ptr_page_table1!=NULL)
-			{
-				for(int x=0; x<1024; x++)
+				LIST_FOREACH(it, &e->SecondList)
 				{
-					if(ptr_page_table1[x]!=0) //If Page Used
+					if (it->virtual_address == i)
 					{
-								flag = 0;
-								break;
+						LIST_REMOVE(&e->SecondList, it);
+						pt_set_page_permissions(e, it->virtual_address, 0, PERM_PRESENT | PERM_WRITEABLE | PERM_USER);
+						it->empty = 1;
+						LIST_INSERT_HEAD(&e->PageWorkingSetList, it);
+						break;
 					}
 				}
-				//cprintf("%d\n", flag);
-				if(flag==1)
+
+				unmap_frame(e->env_page_directory, (void *)i); //Remove from RAM
+				env_page_ws_clear_entry(e, j);				   //Remove Entry From WS
+				break;
+			}
+		}
+		get_page_table(e->env_page_directory, (void *)i, &ptr_page_table1);
+		flag = 1;
+		if (ptr_page_table1 != NULL)
+		{
+			for (int x = 0; x < 1024; x++)
+			{
+				if (ptr_page_table1[x] != 0) //If Page Used
 				{
-					e->env_page_directory[PDX(i)]=0;
-					uint32* ptr_page_table = NULL;
-					struct Frame_Info* ptr_frame_info = get_frame_info(ptr_page_directory,(void*)ptr_page_table1, &ptr_page_table);
-		            free_frame(ptr_frame_info);
-					unmap_frame(ptr_page_directory , (void*)ptr_page_table1);
+					flag = 0;
+					break;
 				}
+			}
+			//cprintf("%d\n", flag);
+			if (flag == 1)
+			{
+				e->env_page_directory[PDX(i)] = 0;
+				uint32 *ptr_page_table = NULL;
+				struct Frame_Info *ptr_frame_info = get_frame_info(ptr_page_directory, (void *)ptr_page_table1, &ptr_page_table);
+				free_frame(ptr_frame_info);
+				//unmap_frame(ptr_page_directory, (void *)ptr_page_table1);
 			}
 		}
 	}
+}
 
-
-
-
-void __freeMem_with_buffering(struct Env* e, uint32 virtual_address, uint32 size)
+void __freeMem_with_buffering(struct Env *e, uint32 virtual_address, uint32 size)
 {
 	panic("this function is not required...!!");
 }
@@ -877,7 +869,7 @@ void __freeMem_with_buffering(struct Env* e, uint32 virtual_address, uint32 size
 //================= [BONUS] =====================
 // [3] moveMem
 
-void moveMem(struct Env* e, uint32 src_virtual_address, uint32 dst_virtual_address, uint32 size)
+void moveMem(struct Env *e, uint32 src_virtual_address, uint32 dst_virtual_address, uint32 size)
 {
 	panic("moveMem() is not required!!");
 }
@@ -890,21 +882,21 @@ void moveMem(struct Env* e, uint32 src_virtual_address, uint32 dst_virtual_addre
 // calculates the new allocatino size required for given address+size,
 // we are not interested in knowing if pages or tables actually exist in memory or the page file,
 // we are interested in knowing whether they are allocated or not.
-uint32 calculate_required_frames(uint32* ptr_page_directory, uint32 start_virtual_address, uint32 size)
+uint32 calculate_required_frames(uint32 *ptr_page_directory, uint32 start_virtual_address, uint32 size)
 {
-	LOG_STATMENT(cprintf("calculate_required_frames: Starting at address %x",start_virtual_address));
+	LOG_STATMENT(cprintf("calculate_required_frames: Starting at address %x", start_virtual_address));
 	//calculate the required page tables
 	uint32 number_of_tables = 0;
 
 	long i = 0;
-	uint32 current_virtual_address = ROUNDDOWN(start_virtual_address, PAGE_SIZE*1024);
+	uint32 current_virtual_address = ROUNDDOWN(start_virtual_address, PAGE_SIZE * 1024);
 
-	for(; current_virtual_address < (start_virtual_address+size); current_virtual_address+= PAGE_SIZE*1024)
+	for (; current_virtual_address < (start_virtual_address + size); current_virtual_address += PAGE_SIZE * 1024)
 	{
 		uint32 *ptr_page_table;
-		get_page_table(ptr_page_directory, (void*) current_virtual_address, &ptr_page_table);
+		get_page_table(ptr_page_directory, (void *)current_virtual_address, &ptr_page_table);
 
-		if(ptr_page_table == 0)
+		if (ptr_page_table == 0)
 		{
 			(number_of_tables)++;
 		}
@@ -914,10 +906,10 @@ uint32 calculate_required_frames(uint32* ptr_page_directory, uint32 start_virtua
 	uint32 number_of_pages = 0;
 	current_virtual_address = ROUNDDOWN(start_virtual_address, PAGE_SIZE);
 
-	for(; current_virtual_address < (start_virtual_address+size); current_virtual_address+= PAGE_SIZE)
+	for (; current_virtual_address < (start_virtual_address + size); current_virtual_address += PAGE_SIZE)
 	{
 		uint32 *ptr_page_table;
-		if (get_frame_info(ptr_page_directory, (void*) current_virtual_address, &ptr_page_table) == 0)
+		if (get_frame_info(ptr_page_directory, (void *)current_virtual_address, &ptr_page_table) == 0)
 		{
 			(number_of_pages)++;
 		}
@@ -925,10 +917,8 @@ uint32 calculate_required_frames(uint32* ptr_page_directory, uint32 start_virtua
 
 	//return total number of frames
 	LOG_STATMENT(cprintf("calculate_required_frames: Done!"));
-	return number_of_tables+number_of_pages;
+	return number_of_tables + number_of_pages;
 }
-
-
 
 // calculate_available_frames:
 struct freeFramesCounters calculate_available_frames()
@@ -963,30 +953,26 @@ struct freeFramesCounters calculate_available_frames()
 	 */
 	//calculate the free frames from the free frame list
 	struct Frame_Info *ptr;
-	uint32 totalFreeUnBuffered = 0 ;
-	uint32 totalFreeBuffered = 0 ;
-	uint32 totalModified = 0 ;
-
+	uint32 totalFreeUnBuffered = 0;
+	uint32 totalFreeBuffered = 0;
+	uint32 totalModified = 0;
 
 	LIST_FOREACH(ptr, &free_frame_list)
 	{
 		if (ptr->isBuffered)
-			totalFreeBuffered++ ;
+			totalFreeBuffered++;
 		else
-			totalFreeUnBuffered++ ;
+			totalFreeUnBuffered++;
 	}
-
-
 
 	LIST_FOREACH(ptr, &modified_frame_list)
 	{
-		totalModified++ ;
+		totalModified++;
 	}
 
-
-	struct freeFramesCounters counters ;
-	counters.freeBuffered = totalFreeBuffered ;
-	counters.freeNotBuffered = totalFreeUnBuffered ;
+	struct freeFramesCounters counters;
+	counters.freeBuffered = totalFreeBuffered;
+	counters.freeNotBuffered = totalFreeUnBuffered;
 	counters.modified = totalModified;
 	return counters;
 }
@@ -998,24 +984,24 @@ uint32 calculate_free_frames()
 	return LIST_SIZE(&free_frame_list);
 }
 
-
-
 ///============================================================================================
 /// Dealing with environment working set
 
 inline uint32 env_page_ws_get_size(struct Env *e)
 {
-	int i=0, counter=0;
-	for(;i<e->page_WS_max_size; i++) if(e->ptr_pageWorkingSet[i].empty == 0) counter++;
+	int i = 0, counter = 0;
+	for (; i < e->page_WS_max_size; i++)
+		if (e->ptr_pageWorkingSet[i].empty == 0)
+			counter++;
 	return counter;
 }
 
-inline void env_page_ws_invalidate(struct Env* e, uint32 virtual_address)
+inline void env_page_ws_invalidate(struct Env *e, uint32 virtual_address)
 {
-	int i=0;
-	for(;i<e->page_WS_max_size; i++)
+	int i = 0;
+	for (; i < e->page_WS_max_size; i++)
 	{
-		if(ROUNDDOWN(e->ptr_pageWorkingSet[i].virtual_address,PAGE_SIZE) == ROUNDDOWN(virtual_address,PAGE_SIZE))
+		if (ROUNDDOWN(e->ptr_pageWorkingSet[i].virtual_address, PAGE_SIZE) == ROUNDDOWN(virtual_address, PAGE_SIZE))
 		{
 			env_page_ws_clear_entry(e, i);
 			break;
@@ -1023,30 +1009,30 @@ inline void env_page_ws_invalidate(struct Env* e, uint32 virtual_address)
 	}
 }
 
-inline void env_page_ws_set_entry(struct Env* e, uint32 entry_index, uint32 virtual_address)
+inline void env_page_ws_set_entry(struct Env *e, uint32 entry_index, uint32 virtual_address)
 {
 	assert(entry_index >= 0 && entry_index < e->page_WS_max_size);
 	assert(virtual_address >= 0 && virtual_address < USER_TOP);
-	e->ptr_pageWorkingSet[entry_index].virtual_address = ROUNDDOWN(virtual_address,PAGE_SIZE);
+	e->ptr_pageWorkingSet[entry_index].virtual_address = ROUNDDOWN(virtual_address, PAGE_SIZE);
 	e->ptr_pageWorkingSet[entry_index].empty = 0;
 
 	return;
 }
 
-inline void env_page_ws_clear_entry(struct Env* e, uint32 entry_index)
+inline void env_page_ws_clear_entry(struct Env *e, uint32 entry_index)
 {
 	assert(entry_index >= 0 && entry_index < (e->page_WS_max_size));
 	e->ptr_pageWorkingSet[entry_index].virtual_address = 0;
 	e->ptr_pageWorkingSet[entry_index].empty = 1;
 }
 
-inline uint32 env_page_ws_get_virtual_address(struct Env* e, uint32 entry_index)
+inline uint32 env_page_ws_get_virtual_address(struct Env *e, uint32 entry_index)
 {
 	assert(entry_index >= 0 && entry_index < (e->page_WS_max_size));
-	return ROUNDDOWN(e->ptr_pageWorkingSet[entry_index].virtual_address,PAGE_SIZE);
+	return ROUNDDOWN(e->ptr_pageWorkingSet[entry_index].virtual_address, PAGE_SIZE);
 }
 
-inline uint32 env_page_ws_is_entry_empty(struct Env* e, uint32 entry_index)
+inline uint32 env_page_ws_is_entry_empty(struct Env *e, uint32 entry_index)
 {
 	return e->ptr_pageWorkingSet[entry_index].empty;
 }
@@ -1055,12 +1041,12 @@ void env_page_ws_print(struct Env *curenv)
 {
 	uint32 i;
 	cprintf("PAGE WS:\n");
-	for(i=0; i< (curenv->page_WS_max_size); i++ )
+	for (i = 0; i < (curenv->page_WS_max_size); i++)
 	{
 		if (curenv->ptr_pageWorkingSet[i].empty)
 		{
 			cprintf("EMPTY LOCATION");
-			if(i==curenv->page_last_WS_index )
+			if (i == curenv->page_last_WS_index)
 			{
 				cprintf("		<--");
 			}
@@ -1069,17 +1055,16 @@ void env_page_ws_print(struct Env *curenv)
 		}
 		uint32 virtual_address = curenv->ptr_pageWorkingSet[i].virtual_address;
 
-		uint32 perm = pt_get_page_permissions(curenv, virtual_address) ;
-		char isModified = ((perm&PERM_MODIFIED) ? 1 : 0);
-		char isUsed= ((perm&PERM_USED) ? 1 : 0);
-		char isBuffered= ((perm&PERM_BUFFERED) ? 1 : 0);
+		uint32 perm = pt_get_page_permissions(curenv, virtual_address);
+		char isModified = ((perm & PERM_MODIFIED) ? 1 : 0);
+		char isUsed = ((perm & PERM_USED) ? 1 : 0);
+		char isBuffered = ((perm & PERM_BUFFERED) ? 1 : 0);
 
+		cprintf("address @ %d = %x", i, curenv->ptr_pageWorkingSet[i].virtual_address);
 
-		cprintf("address @ %d = %x",i, curenv->ptr_pageWorkingSet[i].virtual_address);
+		cprintf(", used= %d, modified= %d, buffered= %d", isUsed, isModified, isBuffered);
 
-		cprintf(", used= %d, modified= %d, buffered= %d", isUsed, isModified, isBuffered) ;
-
-		if(i==curenv->page_last_WS_index )
+		if (i == curenv->page_last_WS_index)
 		{
 			cprintf(" <--");
 		}
@@ -1094,12 +1079,12 @@ void env_table_ws_print(struct Env *curenv)
 	uint32 i;
 	cprintf("---------------------------------------------------\n");
 	cprintf("TABLE WS:\n");
-	for(i=0; i< __TWS_MAX_SIZE; i++ )
+	for (i = 0; i < __TWS_MAX_SIZE; i++)
 	{
 		if (curenv->__ptr_tws[i].empty)
 		{
 			cprintf("EMPTY LOCATION");
-			if(i==curenv->table_last_WS_index )
+			if (i == curenv->table_last_WS_index)
 			{
 				cprintf("		<--");
 			}
@@ -1107,10 +1092,10 @@ void env_table_ws_print(struct Env *curenv)
 			continue;
 		}
 		uint32 virtual_address = curenv->__ptr_tws[i].virtual_address;
-		cprintf("env address at %d = %x",i, curenv->__ptr_tws[i].virtual_address);
+		cprintf("env address at %d = %x", i, curenv->__ptr_tws[i].virtual_address);
 
 		cprintf(", used bit = %d", pd_is_table_used(curenv, virtual_address));
-		if(i==curenv->table_last_WS_index )
+		if (i == curenv->table_last_WS_index)
 		{
 			cprintf(" <--");
 		}
@@ -1120,17 +1105,19 @@ void env_table_ws_print(struct Env *curenv)
 
 inline uint32 env_table_ws_get_size(struct Env *e)
 {
-	int i=0, counter=0;
-	for(;i<__TWS_MAX_SIZE; i++) if(e->__ptr_tws[i].empty == 0) counter++;
+	int i = 0, counter = 0;
+	for (; i < __TWS_MAX_SIZE; i++)
+		if (e->__ptr_tws[i].empty == 0)
+			counter++;
 	return counter;
 }
 
-inline void env_table_ws_invalidate(struct Env* e, uint32 virtual_address)
+inline void env_table_ws_invalidate(struct Env *e, uint32 virtual_address)
 {
-	int i=0;
-	for(;i<__TWS_MAX_SIZE; i++)
+	int i = 0;
+	for (; i < __TWS_MAX_SIZE; i++)
 	{
-		if(ROUNDDOWN(e->__ptr_tws[i].virtual_address,PAGE_SIZE*1024) == ROUNDDOWN(virtual_address,PAGE_SIZE*1024))
+		if (ROUNDDOWN(e->__ptr_tws[i].virtual_address, PAGE_SIZE * 1024) == ROUNDDOWN(virtual_address, PAGE_SIZE * 1024))
 		{
 			env_table_ws_clear_entry(e, i);
 			break;
@@ -1138,202 +1125,194 @@ inline void env_table_ws_invalidate(struct Env* e, uint32 virtual_address)
 	}
 }
 
-inline void env_table_ws_set_entry(struct Env* e, uint32 entry_index, uint32 virtual_address)
+inline void env_table_ws_set_entry(struct Env *e, uint32 entry_index, uint32 virtual_address)
 {
 	assert(entry_index >= 0 && entry_index < __TWS_MAX_SIZE);
 	assert(virtual_address >= 0 && virtual_address < USER_TOP);
-	e->__ptr_tws[entry_index].virtual_address = ROUNDDOWN(virtual_address,PAGE_SIZE*1024);
+	e->__ptr_tws[entry_index].virtual_address = ROUNDDOWN(virtual_address, PAGE_SIZE * 1024);
 	e->__ptr_tws[entry_index].empty = 0;
 
 	//e->__ptr_tws[entry_index].time_stamp = time;
 	return;
 }
 
-inline void env_table_ws_clear_entry(struct Env* e, uint32 entry_index)
+inline void env_table_ws_clear_entry(struct Env *e, uint32 entry_index)
 {
 	assert(entry_index >= 0 && entry_index < __TWS_MAX_SIZE);
 	e->__ptr_tws[entry_index].virtual_address = 0;
 	e->__ptr_tws[entry_index].empty = 1;
 }
 
-inline uint32 env_table_ws_get_virtual_address(struct Env* e, uint32 entry_index)
+inline uint32 env_table_ws_get_virtual_address(struct Env *e, uint32 entry_index)
 {
 	assert(entry_index >= 0 && entry_index < __TWS_MAX_SIZE);
-	return ROUNDDOWN(e->__ptr_tws[entry_index].virtual_address,PAGE_SIZE*1024);
+	return ROUNDDOWN(e->__ptr_tws[entry_index].virtual_address, PAGE_SIZE * 1024);
 }
 
-
-inline uint32 env_table_ws_is_entry_empty(struct Env* e, uint32 entry_index)
+inline uint32 env_table_ws_is_entry_empty(struct Env *e, uint32 entry_index)
 {
 	return e->__ptr_tws[entry_index].empty;
 }
 
 void addTableToTableWorkingSet(struct Env *e, uint32 tableAddress)
 {
-	tableAddress = ROUNDDOWN(tableAddress, PAGE_SIZE*1024);
+	tableAddress = ROUNDDOWN(tableAddress, PAGE_SIZE * 1024);
 	e->__ptr_tws[e->table_last_WS_index].virtual_address = tableAddress;
 	e->__ptr_tws[e->table_last_WS_index].empty = 0;
 
-	e->table_last_WS_index ++;
+	e->table_last_WS_index++;
 	e->table_last_WS_index %= __TWS_MAX_SIZE;
 }
 ///=================================================================================================
-
-
-
 
 ///****************************************************************************************///
 ///******************************* PAGE BUFFERING FUNCTIONS ******************************///
 ///****************************************************************************************///
 
-void bufferList_add_page(struct Linked_List* bufferList,struct Frame_Info *ptr_frame_info)
+void bufferList_add_page(struct Linked_List *bufferList, struct Frame_Info *ptr_frame_info)
 {
 	LIST_INSERT_TAIL(bufferList, ptr_frame_info);
 }
-void bufferlist_remove_page(struct Linked_List* bufferList, struct Frame_Info *ptr_frame_info)
+void bufferlist_remove_page(struct Linked_List *bufferList, struct Frame_Info *ptr_frame_info)
 {
 	LIST_REMOVE(bufferList, ptr_frame_info);
 }
 
-
-
 ///============================================================================================
 /// Dealing with page and page table entry flags
 
-inline uint32 pd_is_table_used(struct Env* ptr_env, uint32 virtual_address)
+inline uint32 pd_is_table_used(struct Env *ptr_env, uint32 virtual_address)
 {
-	return ( (ptr_env->env_page_directory[PDX(virtual_address)] & PERM_USED) == PERM_USED ? 1 : 0);
+	return ((ptr_env->env_page_directory[PDX(virtual_address)] & PERM_USED) == PERM_USED ? 1 : 0);
 }
 
-inline void pd_set_table_unused(struct Env* ptr_env, uint32 virtual_address)
+inline void pd_set_table_unused(struct Env *ptr_env, uint32 virtual_address)
 {
 	ptr_env->env_page_directory[PDX(virtual_address)] &= (~PERM_USED);
 	tlb_invalidate((void *)NULL, (void *)virtual_address);
 }
 
-inline void pd_clear_page_dir_entry(struct Env* ptr_env, uint32 virtual_address)
+inline void pd_clear_page_dir_entry(struct Env *ptr_env, uint32 virtual_address)
 {
-	uint32 * ptr_pgdir = ptr_env->env_page_directory ;
-	ptr_pgdir[PDX(virtual_address)] = 0 ;
+	uint32 *ptr_pgdir = ptr_env->env_page_directory;
+	ptr_pgdir[PDX(virtual_address)] = 0;
 	tlbflush();
 }
 
-extern int __pf_write_env_table( struct Env* ptr_env, uint32 virtual_address, uint32* tableKVirtualAddress);
-extern int __pf_read_env_table(struct Env* ptr_env, uint32 virtual_address, uint32* tableKVirtualAddress);
+extern int __pf_write_env_table(struct Env *ptr_env, uint32 virtual_address, uint32 *tableKVirtualAddress);
+extern int __pf_read_env_table(struct Env *ptr_env, uint32 virtual_address, uint32 *tableKVirtualAddress);
 
-inline void pt_set_page_permissions(struct Env* ptr_env, uint32 virtual_address, uint32 permissions_to_set, uint32 permissions_to_clear)
+inline void pt_set_page_permissions(struct Env *ptr_env, uint32 virtual_address, uint32 permissions_to_set, uint32 permissions_to_clear)
 {
-	uint32 * ptr_pgdir = ptr_env->env_page_directory ;
-	uint32* ptr_page_table;
+	uint32 *ptr_pgdir = ptr_env->env_page_directory;
+	uint32 *ptr_page_table;
 	//if(get_page_table(ptr_pgdir, (void *)virtual_address, &ptr_page_table) == TABLE_NOT_EXIST)
 	//	panic("function pt_set_page_unmodified() called with invalid virtual address\n") ;
 
-	uint32 	page_directory_entry = ptr_pgdir[PDX(virtual_address)] ;
-	if ( (page_directory_entry & PERM_PRESENT) == PERM_PRESENT)
+	uint32 page_directory_entry = ptr_pgdir[PDX(virtual_address)];
+	if ((page_directory_entry & PERM_PRESENT) == PERM_PRESENT)
 	{
-		if(USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(virtual_address))
+		if (USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(virtual_address))
 		{
-			ptr_page_table = (uint32*)kheap_virtual_address(EXTRACT_ADDRESS(page_directory_entry)) ;
+			ptr_page_table = (uint32 *)kheap_virtual_address(EXTRACT_ADDRESS(page_directory_entry));
 		}
 		else
 		{
-			ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(EXTRACT_ADDRESS(page_directory_entry)) ;
+			ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(EXTRACT_ADDRESS(page_directory_entry));
 		}
 		ptr_page_table[PTX(virtual_address)] |= (permissions_to_set);
 		ptr_page_table[PTX(virtual_address)] &= (~permissions_to_clear);
-
 	}
 	else if (page_directory_entry != 0) //the table exists but not in main mem, so it must be in sec mem
 	{
 		//cprintf("Warning %d: pt_is_page_modified() is called while the page table is on disk!!\n", ++cnt);
 		//Temporary read the table from page file into main memory
-		int success = __pf_read_env_table(ptr_env, virtual_address, (void*) ptr_temp_page);
-		ptr_page_table = (uint32*) ptr_temp_page;
-		if(success == E_TABLE_NOT_EXIST_IN_PF)
+		int success = __pf_read_env_table(ptr_env, virtual_address, (void *)ptr_temp_page);
+		ptr_page_table = (uint32 *)ptr_temp_page;
+		if (success == E_TABLE_NOT_EXIST_IN_PF)
 			panic("pt_set_page_permissions: table not found in PF when expected to find one !. please revise your table fault\
 			handling code");
 
 		ptr_page_table[PTX(virtual_address)] |= (permissions_to_set);
 		ptr_page_table[PTX(virtual_address)] &= (~permissions_to_clear);
 
-		__pf_write_env_table(ptr_env, virtual_address, (void*) ptr_temp_page);
+		__pf_write_env_table(ptr_env, virtual_address, (void *)ptr_temp_page);
 	}
 	else
 	{
 		//cprintf("[%s] va = %x\n", ptr_env->prog_name, virtual_address) ;
-		panic("function pt_set_page_permissions() called with invalid virtual address. The corresponding page table doesn't exist\n") ;
+		panic("function pt_set_page_permissions() called with invalid virtual address. The corresponding page table doesn't exist\n");
 	}
 
 	tlb_invalidate((void *)NULL, (void *)virtual_address);
 }
 
-inline void pt_clear_page_table_entry(struct Env* ptr_env, uint32 virtual_address)
+inline void pt_clear_page_table_entry(struct Env *ptr_env, uint32 virtual_address)
 {
-	uint32 * ptr_pgdir = ptr_env->env_page_directory ;
-	uint32* ptr_page_table;
+	uint32 *ptr_pgdir = ptr_env->env_page_directory;
+	uint32 *ptr_page_table;
 	//if(get_page_table(ptr_pgdir, (void *)virtual_address, &ptr_page_table) == TABLE_NOT_EXIST)
 	//	panic("function pt_set_page_unmodified() called with invalid virtual address\n") ;
 
-	uint32 	page_directory_entry = ptr_pgdir[PDX(virtual_address)] ;
+	uint32 page_directory_entry = ptr_pgdir[PDX(virtual_address)];
 	if ((page_directory_entry & PERM_PRESENT) == PERM_PRESENT)
 	{
-		if(USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(virtual_address))
+		if (USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(virtual_address))
 		{
-			ptr_page_table = (uint32*)kheap_virtual_address(EXTRACT_ADDRESS(page_directory_entry)) ;
+			ptr_page_table = (uint32 *)kheap_virtual_address(EXTRACT_ADDRESS(page_directory_entry));
 		}
 		else
 		{
-			ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(EXTRACT_ADDRESS(page_directory_entry)) ;
+			ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(EXTRACT_ADDRESS(page_directory_entry));
 		}
 
-		ptr_page_table[PTX(virtual_address)] = 0 ;
+		ptr_page_table[PTX(virtual_address)] = 0;
 	}
 	else if (page_directory_entry != 0) //the table exists but not in main mem, so it must be in sec mem
 	{
 		//cprintf("Warning %d: pt_is_page_modified() is called while the page table is on disk!!\n", ++cnt);
 		//Temporary read the table from page file into main memory
 
-		int success = __pf_read_env_table(ptr_env, virtual_address, (void*) ptr_temp_page);
-		ptr_page_table = (uint32*) ptr_temp_page;
-		if(success == E_TABLE_NOT_EXIST_IN_PF)
+		int success = __pf_read_env_table(ptr_env, virtual_address, (void *)ptr_temp_page);
+		ptr_page_table = (uint32 *)ptr_temp_page;
+		if (success == E_TABLE_NOT_EXIST_IN_PF)
 			panic("pt_clear_page_table_entry: table not found in PF when expected to find one !. please revise your table fault\
 			handling code");
 
-		ptr_page_table[PTX(virtual_address)] = 0 ;
+		ptr_page_table[PTX(virtual_address)] = 0;
 
-		__pf_write_env_table(ptr_env, virtual_address, (void*) ptr_temp_page);
+		__pf_write_env_table(ptr_env, virtual_address, (void *)ptr_temp_page);
 	}
 	else
-		panic("function pt_clear_page_table_entry() called with invalid virtual address. The corresponding page table doesn't exist\n") ;
-
+		panic("function pt_clear_page_table_entry() called with invalid virtual address. The corresponding page table doesn't exist\n");
 
 	tlb_invalidate((void *)NULL, (void *)virtual_address);
 }
 
-inline uint32 pt_get_page_permissions(struct Env* ptr_env, uint32 virtual_address )
+inline uint32 pt_get_page_permissions(struct Env *ptr_env, uint32 virtual_address)
 {
-	uint32 * ptr_pgdir = ptr_env->env_page_directory ;
-	uint32* ptr_page_table;
+	uint32 *ptr_pgdir = ptr_env->env_page_directory;
+	uint32 *ptr_page_table;
 
-	uint32 	page_directory_entry = ptr_pgdir[PDX(virtual_address)] ;
-	if ( (page_directory_entry & PERM_PRESENT) == PERM_PRESENT)
+	uint32 page_directory_entry = ptr_pgdir[PDX(virtual_address)];
+	if ((page_directory_entry & PERM_PRESENT) == PERM_PRESENT)
 	{
-		if(USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(virtual_address))
+		if (USE_KHEAP && !CHECK_IF_KERNEL_ADDRESS(virtual_address))
 		{
-			ptr_page_table = (uint32*)kheap_virtual_address(EXTRACT_ADDRESS(page_directory_entry)) ;
+			ptr_page_table = (uint32 *)kheap_virtual_address(EXTRACT_ADDRESS(page_directory_entry));
 		}
 		else
 		{
-			ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(EXTRACT_ADDRESS(page_directory_entry)) ;
+			ptr_page_table = STATIC_KERNEL_VIRTUAL_ADDRESS(EXTRACT_ADDRESS(page_directory_entry));
 		}
 	}
 	else if (page_directory_entry != 0) //the table exists but not in main mem, so it must be in sec mem
 	{
 		//cprintf("Warning %d: pt_is_page_modified() is called while the page table is on disk!!\n", ++cnt);
 		//Temporary read the table from page file into main memory
-		int success = __pf_read_env_table(ptr_env, virtual_address, (void*) ptr_temp_page);
-		ptr_page_table = (uint32*) ptr_temp_page;
-		if(success == E_TABLE_NOT_EXIST_IN_PF)
+		int success = __pf_read_env_table(ptr_env, virtual_address, (void *)ptr_temp_page);
+		ptr_page_table = (uint32 *)ptr_temp_page;
+		if (success == E_TABLE_NOT_EXIST_IN_PF)
 			panic("pt_get_page_permissions: table not found in PF when expected to find one !. please revise your table fault\
 			handling code");
 	}
@@ -1347,27 +1326,26 @@ inline uint32 pt_get_page_permissions(struct Env* ptr_env, uint32 virtual_addres
 	return (ptr_page_table[PTX(virtual_address)] & 0x00000FFF);
 }
 
-
 //=============================================================
 // 2014 - edited in 2017
 //=============================================================
 // [1] if KHEAP = 1: Create the frames_storage by allocating a PAGE for its directory
-inline uint32* create_frames_storage()
+inline uint32 *create_frames_storage()
 {
-	uint32* frames_storage = (void *)kmalloc(PAGE_SIZE);
-	if(frames_storage == NULL)
+	uint32 *frames_storage = (void *)kmalloc(PAGE_SIZE);
+	if (frames_storage == NULL)
 	{
 		panic("NOT ENOUGH KERNEL HEAP SPACE");
 	}
 	return frames_storage;
 }
 // [2] Add a frame info to the storage of frames at the given index
-inline void add_frame_to_storage(uint32* frames_storage, struct Frame_Info* ptr_frame_info, uint32 index)
+inline void add_frame_to_storage(uint32 *frames_storage, struct Frame_Info *ptr_frame_info, uint32 index)
 {
-	uint32 va = index * PAGE_SIZE ;
+	uint32 va = index * PAGE_SIZE;
 	uint32 *ptr_page_table;
-	int r = get_page_table(frames_storage, (void*) va, &ptr_page_table);
-	if(r == TABLE_NOT_EXIST)
+	int r = get_page_table(frames_storage, (void *)va, &ptr_page_table);
+	if (r == TABLE_NOT_EXIST)
 	{
 #if USE_KHEAP
 		{
@@ -1376,7 +1354,6 @@ inline void add_frame_to_storage(uint32* frames_storage, struct Frame_Info* ptr_
 #else
 		{
 			__static_cpt(frames_storage, (uint32)va, &ptr_page_table);
-
 		}
 #endif
 	}
@@ -1384,27 +1361,27 @@ inline void add_frame_to_storage(uint32* frames_storage, struct Frame_Info* ptr_
 }
 
 // [3] Get a frame info from the storage of frames at the given index
-inline struct Frame_Info* get_frame_from_storage(uint32* frames_storage, uint32 index)
+inline struct Frame_Info *get_frame_from_storage(uint32 *frames_storage, uint32 index)
 {
-	struct Frame_Info* ptr_frame_info;
-	uint32 *ptr_page_table ;
-	uint32 va = index * PAGE_SIZE ;
-	ptr_frame_info = get_frame_info(frames_storage, (void*) va, &ptr_page_table);
+	struct Frame_Info *ptr_frame_info;
+	uint32 *ptr_page_table;
+	uint32 va = index * PAGE_SIZE;
+	ptr_frame_info = get_frame_info(frames_storage, (void *)va, &ptr_page_table);
 	return ptr_frame_info;
 }
 
 // [4] Clear the storage of frames
-inline void clear_frames_storage(uint32* frames_storage)
+inline void clear_frames_storage(uint32 *frames_storage)
 {
-	int fourMega = 1024 * PAGE_SIZE ;
-	int i ;
-	for (i = 0 ; i < 1024 ; i++)
+	int fourMega = 1024 * PAGE_SIZE;
+	int i;
+	for (i = 0; i < 1024; i++)
 	{
 		if (frames_storage[i] != 0)
 		{
 #if USE_KHEAP
 			{
-				kfree((void*)kheap_virtual_address(EXTRACT_ADDRESS(frames_storage[i])));
+				kfree((void *)kheap_virtual_address(EXTRACT_ADDRESS(frames_storage[i])));
 			}
 #else
 			{
@@ -1417,29 +1394,71 @@ inline void clear_frames_storage(uint32* frames_storage)
 }
 //********************************************************************************//
 /*2015*/
-void setUHeapPlacementStrategyFIRSTFIT(){_UHeapPlacementStrategy = UHP_PLACE_FIRSTFIT;}
-void setUHeapPlacementStrategyBESTFIT(){_UHeapPlacementStrategy = UHP_PLACE_BESTFIT;}
-void setUHeapPlacementStrategyNEXTFIT(){_UHeapPlacementStrategy = UHP_PLACE_NEXTFIT;}
-void setUHeapPlacementStrategyWORSTFIT(){_UHeapPlacementStrategy = UHP_PLACE_WORSTFIT;}
+void setUHeapPlacementStrategyFIRSTFIT() { _UHeapPlacementStrategy = UHP_PLACE_FIRSTFIT; }
+void setUHeapPlacementStrategyBESTFIT() { _UHeapPlacementStrategy = UHP_PLACE_BESTFIT; }
+void setUHeapPlacementStrategyNEXTFIT() { _UHeapPlacementStrategy = UHP_PLACE_NEXTFIT; }
+void setUHeapPlacementStrategyWORSTFIT() { _UHeapPlacementStrategy = UHP_PLACE_WORSTFIT; }
 
-uint32 isUHeapPlacementStrategyFIRSTFIT(){if(_UHeapPlacementStrategy == UHP_PLACE_FIRSTFIT) return 1; return 0;}
-uint32 isUHeapPlacementStrategyBESTFIT(){if(_UHeapPlacementStrategy == UHP_PLACE_BESTFIT) return 1; return 0;}
-uint32 isUHeapPlacementStrategyNEXTFIT(){if(_UHeapPlacementStrategy == UHP_PLACE_NEXTFIT) return 1; return 0;}
-uint32 isUHeapPlacementStrategyWORSTFIT(){if(_UHeapPlacementStrategy == UHP_PLACE_WORSTFIT) return 1; return 0;}
+uint32 isUHeapPlacementStrategyFIRSTFIT()
+{
+	if (_UHeapPlacementStrategy == UHP_PLACE_FIRSTFIT)
+		return 1;
+	return 0;
+}
+uint32 isUHeapPlacementStrategyBESTFIT()
+{
+	if (_UHeapPlacementStrategy == UHP_PLACE_BESTFIT)
+		return 1;
+	return 0;
+}
+uint32 isUHeapPlacementStrategyNEXTFIT()
+{
+	if (_UHeapPlacementStrategy == UHP_PLACE_NEXTFIT)
+		return 1;
+	return 0;
+}
+uint32 isUHeapPlacementStrategyWORSTFIT()
+{
+	if (_UHeapPlacementStrategy == UHP_PLACE_WORSTFIT)
+		return 1;
+	return 0;
+}
 
 //********************************************************************************//
 /*2017*/
-void setKHeapPlacementStrategyCONTALLOC(){_KHeapPlacementStrategy = KHP_PLACE_CONTALLOC;}
-void setKHeapPlacementStrategyFIRSTFIT(){_KHeapPlacementStrategy = KHP_PLACE_FIRSTFIT;}
-void setKHeapPlacementStrategyBESTFIT(){_KHeapPlacementStrategy = KHP_PLACE_BESTFIT;}
-void setKHeapPlacementStrategyNEXTFIT(){_KHeapPlacementStrategy = KHP_PLACE_NEXTFIT;}
-void setKHeapPlacementStrategyWORSTFIT(){_KHeapPlacementStrategy = KHP_PLACE_WORSTFIT;}
+void setKHeapPlacementStrategyCONTALLOC() { _KHeapPlacementStrategy = KHP_PLACE_CONTALLOC; }
+void setKHeapPlacementStrategyFIRSTFIT() { _KHeapPlacementStrategy = KHP_PLACE_FIRSTFIT; }
+void setKHeapPlacementStrategyBESTFIT() { _KHeapPlacementStrategy = KHP_PLACE_BESTFIT; }
+void setKHeapPlacementStrategyNEXTFIT() { _KHeapPlacementStrategy = KHP_PLACE_NEXTFIT; }
+void setKHeapPlacementStrategyWORSTFIT() { _KHeapPlacementStrategy = KHP_PLACE_WORSTFIT; }
 
-uint32 isKHeapPlacementStrategyCONTALLOC(){if(_KHeapPlacementStrategy == KHP_PLACE_CONTALLOC) return 1; return 0;}
-uint32 isKHeapPlacementStrategyFIRSTFIT(){if(_KHeapPlacementStrategy == KHP_PLACE_FIRSTFIT) return 1; return 0;}
-uint32 isKHeapPlacementStrategyBESTFIT(){if(_KHeapPlacementStrategy == KHP_PLACE_BESTFIT) return 1; return 0;}
-uint32 isKHeapPlacementStrategyNEXTFIT(){if(_KHeapPlacementStrategy == KHP_PLACE_NEXTFIT) return 1; return 0;}
-uint32 isKHeapPlacementStrategyWORSTFIT(){if(_KHeapPlacementStrategy == KHP_PLACE_WORSTFIT) return 1; return 0;}
-
-
-
+uint32 isKHeapPlacementStrategyCONTALLOC()
+{
+	if (_KHeapPlacementStrategy == KHP_PLACE_CONTALLOC)
+		return 1;
+	return 0;
+}
+uint32 isKHeapPlacementStrategyFIRSTFIT()
+{
+	if (_KHeapPlacementStrategy == KHP_PLACE_FIRSTFIT)
+		return 1;
+	return 0;
+}
+uint32 isKHeapPlacementStrategyBESTFIT()
+{
+	if (_KHeapPlacementStrategy == KHP_PLACE_BESTFIT)
+		return 1;
+	return 0;
+}
+uint32 isKHeapPlacementStrategyNEXTFIT()
+{
+	if (_KHeapPlacementStrategy == KHP_PLACE_NEXTFIT)
+		return 1;
+	return 0;
+}
+uint32 isKHeapPlacementStrategyWORSTFIT()
+{
+	if (_KHeapPlacementStrategy == KHP_PLACE_WORSTFIT)
+		return 1;
+	return 0;
+}
