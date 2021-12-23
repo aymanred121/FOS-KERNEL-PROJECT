@@ -20,8 +20,8 @@ FUNCTIONS:	to_physical_address, get_frame_info, tlb_invalidate
 // we must duplicate the segments for the user and the kernel.
 //
 
-uint32 hashCap = 1009;
-struct WorkingSetElement* hashArr[1009];
+uint32 hashCap = 10007;
+struct WorkingSetElement* hashArr[10007];
 
 struct Segdesc gdt[] =
 {
