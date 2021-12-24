@@ -474,7 +474,50 @@ void table_fault_handler(struct Env *curenv, uint32 fault_va)
 	}
 #endif
 }
-
+void mapVA(struct Env *e, uint32 va)
+{
+	struct Frame_Info *ptr_frame = NULL;
+	uint32 *page_table = NULL;
+	int alo = allocate_frame(&ptr_frame);
+	map_frame(e->env_page_directory, ptr_frame, (void *)va, PERM_WRITEABLE | PERM_USER | PERM_PRESENT);
+	int inPF = pf_read_env_page(e, (void *)va);
+	if (inPF == E_PAGE_NOT_EXIST_IN_PF)
+	{
+		if (va < USTACKTOP && va >= USTACKBOTTOM)
+		{
+			pf_add_empty_env_page(e, va, 0);
+		}
+		else
+		{
+			cprintf("\nva = %x\n", va);
+			panic("Invalid Access");
+		}
+	}
+}
+void insertAtActive(struct Env *e, struct WorkingSetElement *elm, uint32 va)
+{
+	elm->virtual_address = va;
+	LIST_INSERT_HEAD(&e->ActiveList, elm);
+	pt_set_page_permissions(e, elm->virtual_address, PERM_WRITEABLE | PERM_USER | PERM_PRESENT, 0);
+}
+void insertAtSecond(struct Env *e, struct WorkingSetElement *elm)
+{
+	LIST_INSERT_HEAD(&e->SecondList, elm);
+	addHashItem(elm->virtual_address, elm);
+	pt_set_page_permissions(e, elm->virtual_address, 0, PERM_PRESENT | PERM_WRITEABLE);
+}
+void victimize(struct Env *e, struct WorkingSetElement *elm)
+{
+	uint32 prem = pt_get_page_permissions(e, elm->virtual_address);
+	if (prem & PERM_MODIFIED)
+	{
+		uint32 *pt = NULL;
+		struct Frame_Info *frame = get_frame_info(e->env_page_directory, (void *)elm->virtual_address, &pt);
+		pf_update_env_page(e, (void *)elm->virtual_address, frame);
+	}
+	pt_set_page_permissions(e, elm->virtual_address, 0, PERM_PRESENT | PERM_WRITEABLE | PERM_USER);
+	unmap_frame(e->env_page_directory, (void *)elm->virtual_address);
+}
 //Handle the page fault
 void page_fault_handler(struct Env *curenv, uint32 fault_va)
 {
@@ -485,48 +528,25 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 
 	// check if in SecondList and move to Active list
 	if (pt_get_page_permissions(curenv, fault_va) & ~(PERM_PRESENT))
-		{
-			struct WorkingSetElement* repeatElm = getHashItem(fault_va);
-			repeatElm->virtual_address = fault_va;
-			struct WorkingSetElement* tail = LIST_LAST(&curenv->ActiveList);
-			LIST_REMOVE(&curenv->SecondList,repeatElm);
-			LIST_REMOVE(&curenv->ActiveList,tail);
-
-			LIST_INSERT_HEAD(&curenv->ActiveList,repeatElm);
-			LIST_INSERT_HEAD(&curenv->SecondList,tail);
-			addHashItem(tail->virtual_address, tail);
-			pt_set_page_permissions(curenv,repeatElm->virtual_address,PERM_WRITEABLE|PERM_USER|PERM_PRESENT,0);
-			pt_set_page_permissions(curenv,tail->virtual_address,0,PERM_PRESENT|PERM_WRITEABLE);
-
-			return;
-		}
-
-	// map to a frame and check if it's in page file or not and if it's not check if it's in the stack
-	struct Frame_Info *ptr_frame = NULL;
-	uint32 *page_table = NULL;
-	int alo = allocate_frame(&ptr_frame);
-	map_frame(curenv->env_page_directory, ptr_frame, (void *)fault_va, PERM_WRITEABLE | PERM_USER | PERM_PRESENT);
-	int inPF = pf_read_env_page(curenv, (void *)fault_va);
-	if (inPF == E_PAGE_NOT_EXIST_IN_PF)
 	{
-		if (fault_va < USTACKTOP && fault_va >= USTACKBOTTOM)
-		{
-			pf_add_empty_env_page(curenv, fault_va, 0);
-		}
-		else
-		{
-			cprintf("\nva = %x\n",fault_va);
-			panic("Invalid Access");
-		}
+		struct WorkingSetElement *repeatElm = getHashItem(fault_va);
+		struct WorkingSetElement *tail = LIST_LAST(&curenv->ActiveList);
+		LIST_REMOVE(&curenv->SecondList, repeatElm);
+		LIST_REMOVE(&curenv->ActiveList, tail);
+		insertAtActive(curenv, repeatElm, fault_va);
+		insertAtSecond(curenv, tail);
+
+		return;
 	}
 
+	// map to a frame and check if it's in page file or not and if it's not check if it's in the stack
+	mapVA(curenv, fault_va);
 	// if ActiveList isn't full
 	if (LIST_SIZE(&curenv->ActiveList) != curenv->ActiveListSize)
 	{
 		struct WorkingSetElement *elm = LIST_FIRST(&curenv->PageWorkingSetList);
-		elm->virtual_address = fault_va;
 		LIST_REMOVE(&curenv->PageWorkingSetList, elm);
-		LIST_INSERT_HEAD(&curenv->ActiveList, elm);
+		insertAtActive(curenv, elm, fault_va);
 	}
 	// if ActiveList is full
 	else if (curenv->SecondListSize != 0)
@@ -538,17 +558,8 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 		// if SecondList is full
 		if (LIST_SIZE(&curenv->SecondList) == curenv->SecondListSize)
 		{
-
-			uint32 prem = pt_get_page_permissions(curenv, Stail->virtual_address);
-			if (prem & PERM_MODIFIED)
-			{
-				uint32 *pt = NULL;
-				struct Frame_Info *frame = get_frame_info(curenv->env_page_directory, (void *)Stail->virtual_address, &pt);
-				pf_update_env_page(curenv, (void *)Stail->virtual_address, frame);
-			}
+			victimize(curenv, Stail);
 			LIST_REMOVE(&curenv->SecondList, Stail);
-			pt_set_page_permissions(curenv, Stail->virtual_address, 0, PERM_PRESENT | PERM_WRITEABLE | PERM_USER);
-			unmap_frame(curenv->env_page_directory, (void *)Stail->virtual_address);
 		}
 		// if SecondList isn't full
 		else
@@ -558,31 +569,15 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 		}
 
 		LIST_REMOVE(&curenv->ActiveList, Atail);
-		LIST_INSERT_HEAD(&curenv->SecondList, Atail);
-		addHashItem(Atail->virtual_address, Atail);
-		pt_set_page_permissions(curenv, Atail->virtual_address, 0, PERM_PRESENT | PERM_WRITEABLE | PERM_USER);
-
-		Stail->virtual_address = fault_va;
-		LIST_INSERT_HEAD(&curenv->ActiveList, Stail);
-		pt_set_page_permissions(curenv, fault_va, PERM_WRITEABLE | PERM_PRESENT | PERM_USER, 0);
+		insertAtSecond(curenv, Atail);
+		insertAtActive(curenv, Stail, fault_va);
 	}
 	else
 	{
 		struct WorkingSetElement *Atail = LIST_LAST(&curenv->ActiveList);
-		uint32 prem = pt_get_page_permissions(curenv, Atail->virtual_address);
-		if (prem & PERM_MODIFIED)
-		{
-			uint32 *pt = NULL;
-			struct Frame_Info *frame = get_frame_info(curenv->env_page_directory, (void *)Atail->virtual_address, &pt);
-			pf_update_env_page(curenv, (void *)Atail->virtual_address, frame);
-		}
+		victimize(curenv, Atail);
 		LIST_REMOVE(&curenv->ActiveList, Atail);
-		pt_set_page_permissions(curenv, Atail->virtual_address, 0, PERM_PRESENT | PERM_WRITEABLE | PERM_USER);
-		unmap_frame(curenv->env_page_directory, (void *)Atail->virtual_address);
-
-		Atail->virtual_address = fault_va;
-		LIST_INSERT_HEAD(&curenv->ActiveList, Atail);
-		pt_set_page_permissions(curenv, fault_va, PERM_WRITEABLE | PERM_PRESENT | PERM_USER, 0);
+		insertAtActive(curenv, Atail, fault_va);
 	}
 
 	//refer to the project presentation and documentation for details
