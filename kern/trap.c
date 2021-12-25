@@ -496,12 +496,14 @@ void mapVA(struct Env *e, uint32 va)
 }
 void insertAtActive(struct Env *e, struct WorkingSetElement *elm, uint32 va)
 {
+	elm->empty = 0;
 	elm->virtual_address = va;
 	LIST_INSERT_HEAD(&e->ActiveList, elm);
 	pt_set_page_permissions(e, elm->virtual_address, PERM_WRITEABLE | PERM_USER | PERM_PRESENT, 0);
 }
 void insertAtSecond(struct Env *e, struct WorkingSetElement *elm)
 {
+	elm->empty = 0;
 	LIST_INSERT_HEAD(&e->SecondList, elm);
 	addHashItem(elm->virtual_address, elm);
 	pt_set_page_permissions(e, elm->virtual_address, 0, PERM_PRESENT | PERM_WRITEABLE);
