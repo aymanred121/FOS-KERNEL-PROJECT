@@ -19,10 +19,6 @@ FUNCTIONS:	to_physical_address, get_frame_info, tlb_invalidate
 // To load the SS register, the CPL must equal the DPL.  Thus,
 // we must duplicate the segments for the user and the kernel.
 //
-
-uint32 hashCap = 10007;
-struct WorkingSetElement* hashArr[10007];
-
 struct Segdesc gdt[] =
 {
 		// 0x0 - unused (always faults -- for trapping NULL far pointers)
@@ -400,18 +396,6 @@ void setup_listing_to_all_page_tables_entries()
 
 }
 
-void initHashArray()
-{
-	for (int i = 0; i < hashCap; i++)
-	{
-		hashArr[i] = 0;
-	}
-}
-
-void addHashItem(uint32 key, struct WorkingSetElement* value)
-{
-	hashArr[hashFunc(key)] = value;
-}
 //
 // Converts an envid to an env pointer.
 //
@@ -453,15 +437,6 @@ int envid2env(int32  envid, struct Env **env_store, bool checkperm)
 
 	*env_store = e;
 	return 0;
-}
-
-uint32 hashFunc(uint32 key)
-{
-	return (key % hashCap);
-}
-struct WorkingSetElement* getHashItem(uint32 key)
-{
-	return hashArr[hashFunc(key)];
 }
 
 //

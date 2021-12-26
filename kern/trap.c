@@ -505,7 +505,6 @@ void insertAtSecond(struct Env *e, struct WorkingSetElement *elm)
 {
 	elm->empty = 0;
 	LIST_INSERT_HEAD(&e->SecondList, elm);
-	addHashItem(elm->virtual_address, elm);
 	pt_set_page_permissions(e, elm->virtual_address, 0, PERM_PRESENT | PERM_WRITEABLE);
 }
 void victimize(struct Env *e, struct WorkingSetElement *elm)
@@ -529,18 +528,24 @@ void page_fault_handler(struct Env *curenv, uint32 fault_va)
 	fault_va = ROUNDDOWN(fault_va, PAGE_SIZE);
 
 	// check if in SecondList and move to Active list
-	if (pt_get_page_permissions(curenv, fault_va) & ~(PERM_PRESENT))
+	struct WorkingSetElement *it = NULL;
+	LIST_FOREACH(it, &(curenv->SecondList))
 	{
-		struct WorkingSetElement *repeatElm = getHashItem(fault_va);
-		struct WorkingSetElement *tail = LIST_LAST(&curenv->ActiveList);
-		LIST_REMOVE(&curenv->SecondList, repeatElm);
-		LIST_REMOVE(&curenv->ActiveList, tail);
-		insertAtActive(curenv, repeatElm, fault_va);
-		insertAtSecond(curenv, tail);
+		if (it->virtual_address == fault_va)
+		{
+			struct WorkingSetElement *tail = LIST_LAST(&curenv->ActiveList);
+			LIST_REMOVE(&curenv->SecondList, it);
+			LIST_REMOVE(&curenv->ActiveList, tail);
 
-		return;
+			LIST_INSERT_HEAD(&curenv->ActiveList, it);
+			LIST_INSERT_HEAD(&curenv->SecondList, tail);
+
+			pt_set_page_permissions(curenv, it->virtual_address, PERM_WRITEABLE | PERM_USER | PERM_PRESENT, 0);
+			pt_set_page_permissions(curenv, tail->virtual_address, 0, PERM_PRESENT | PERM_WRITEABLE);
+
+			return;
+		}
 	}
-
 	// map to a frame and check if it's in page file or not and if it's not check if it's in the stack
 	mapVA(curenv, fault_va);
 	// if ActiveList isn't full
