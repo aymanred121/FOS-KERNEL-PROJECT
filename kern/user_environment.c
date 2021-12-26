@@ -65,7 +65,6 @@ struct ProgramSegment PROGRAM_SEGMENT_FIRST( uint8* ptr_program_start);
 // Helper functions to be used below
 void complete_environment_initialization(struct Env* e);
 void set_environment_entry_point(struct Env* e, uint8* ptr_program_start);
-
 ///===================================================================================
 /// To add FOS support for new user program, just add the appropriate lines like below
 
@@ -824,24 +823,47 @@ void start_env_free(struct Env *e)
 		env_free(e);
 	}
 }
-
+void freeWS(struct Env*e,struct WS_List* list){
+	struct WorkingSetElement* elem=NULL;
+	LIST_FOREACH(elem,list){
+		struct Frame_Info* ptr_frame_info=NULL;
+		uint32* pt=NULL;
+		ptr_frame_info=get_frame_info(e->env_page_directory,(void*)elem->virtual_address,&pt);
+		unmap_frame(e->env_page_directory,(void*)elem->virtual_address);
+		LIST_REMOVE(list,elem);
+		LIST_INSERT_HEAD(list,elem);
+	}
+}
 void env_free(struct Env *e)
 {
-	__remove_pws_user_pages(e);
 
 	//TODO: [PROJECT 2021 - BONUS1] Exit [env_free()]
 
 	//YOUR CODE STARTS HERE, remove the panic and write your code ----
-	panic("env_free() is not implemented yet...!!");
 
 	// [1] Free the pages in the PAGE working set from the main memory
+	freeWS(e,&(e->ActiveList));
+	freeWS(e,&(e->SecondList));
 
 	// [2] Free LRU lists
+	for(int i=0;i<PDX(USER_TOP);i++){
+		if((e->env_page_directory[i] &0xFFFFF000)!=0){
+			uint32 phAddr=(e->env_page_directory[i]&0xfffff000);
+			struct Frame_Info* ptr_frame_info=NULL;
+			ptr_frame_info=to_frame_info(phAddr);
+			if(ptr_frame_info!=0){
+				ptr_frame_info->references=0;
+				free_frame(ptr_frame_info);
+			}
+			e->env_page_directory[i]=0;
+		}
+	}
 
 	// [3] Free all TABLES from the main memory
 
 	// [4] Free the page DIRECTORY from the main memory
-
+	free_frame(to_frame_info(e->env_cr3));
+	tlbflush();
 	//YOUR CODE ENDS HERE --------------------------------------------
 
 	//Don't change these lines:
