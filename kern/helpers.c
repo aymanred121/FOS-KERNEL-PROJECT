@@ -20,8 +20,8 @@ FUNCTIONS:	to_physical_address, get_frame_info, tlb_invalidate
 // we must duplicate the segments for the user and the kernel.
 //
 
-uint32 hashCap = 10007;
-struct WorkingSetElement* hashArr[10007];
+uint32 hashCap = 1000003;
+struct WorkingSetElement* hashArr[1000003] = {0};
 
 struct Segdesc gdt[] =
 {
@@ -402,10 +402,7 @@ void setup_listing_to_all_page_tables_entries()
 
 void initHashArray()
 {
-	for (int i = 0; i < hashCap; i++)
-	{
-		hashArr[i] = 0;
-	}
+
 }
 
 void addHashItem(uint32 key, struct WorkingSetElement* value)
