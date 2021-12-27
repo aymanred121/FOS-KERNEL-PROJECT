@@ -868,6 +868,13 @@ int command_run_program(int number_of_arguments, char **arguments)
 	numOfKheapVACalls = 0;
 
 	sched_new_env(env);
+	// Initialize hash table
+	struct WorkingSetElement* elm;
+	LIST_FOREACH(elm, &(env->SecondList))
+	{
+		addHashItem(elm->virtual_address, elm);
+	}
+	sched_run_env(env->env_id);
 	sched_run_env(env->env_id);
 
 	return 0;
